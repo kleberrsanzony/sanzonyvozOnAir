@@ -55,8 +55,9 @@ const VerificarBuscaPage = () => {
                 className="pl-10 h-12 font-mono text-sm"
               />
             </div>
-            <Button type="submit" className="w-full h-12 bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90">
-              Verificar Autenticidade
+            <Button type="submit" className="w-full h-12 bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 relative overflow-hidden group">
+              <span className="relative z-10">Verificar Autenticidade</span>
+              <div className="absolute inset-0 animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </Button>
           </form>
 

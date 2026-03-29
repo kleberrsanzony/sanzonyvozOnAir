@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Mic, LogOut, CheckSquare, Square, Upload, Award, Send,
-  RefreshCw, Shield, ChevronDown, ChevronUp, Trash2, Pencil, Save, X
+  RefreshCw, Shield, ChevronDown, ChevronUp, Trash2, Pencil, Save, X,
+  Filter
 } from "lucide-react";
+import AdminStats from "@/components/AdminStats";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,7 @@ const AdminPage = () => {
   const [expandedBrief, setExpandedBrief] = useState<string | null>(null);
   const [editingBrief, setEditingBrief] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Brief>>({});
+  const [filter, setFilter] = useState<"all" | "pago" | "pendente" | "certificado">("all");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -250,18 +253,53 @@ const AdminPage = () => {
           <h1 className="font-serif text-3xl font-bold">
             <span className="text-gradient-gold">Briefings</span>
           </h1>
+          <div className="flex bg-secondary/30 p-1 rounded-lg border border-border">
+            <button
+              onClick={() => setFilter("all")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filter === "all" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setFilter("pago")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filter === "pago" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Pagos
+            </button>
+            <button
+              onClick={() => setFilter("pendente")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filter === "pendente" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Pendentes
+            </button>
+            <button
+              onClick={() => setFilter("certificado")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${filter === "certificado" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Certificados
+            </button>
+          </div>
           <button onClick={fetchBriefs} className="text-muted-foreground hover:text-primary transition-colors">
             <RefreshCw className="h-5 w-5" />
           </button>
         </div>
 
+        <AdminStats briefs={briefs} />
+
         {briefs.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
+          <div className="text-center py-16 text-muted-foreground bg-card border border-border rounded-xl">
             <p>Nenhum briefing recebido ainda.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {briefs.map((brief) => (
+            {briefs
+              .filter((b) => {
+                if (filter === "pago") return b.pago;
+                if (filter === "pendente") return !b.pago;
+                if (filter === "certificado") return b.certificado_gerado;
+                return true;
+              })
+              .map((brief) => (
               <div key={brief.id} className="bg-card border border-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setExpandedBrief(expandedBrief === brief.id ? null : brief.id)}
