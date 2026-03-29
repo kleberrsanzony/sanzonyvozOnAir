@@ -5,6 +5,7 @@ import { Shield, CheckCircle, Mic, AlertCircle, RefreshCw, Play, Volume2 } from 
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import CertificateSeal from "@/components/CertificateSeal";
+import { AudioPlayer } from "@/components/AudioPlayer";
 
 interface CertData {
   numero_certificado: string;
@@ -111,10 +112,7 @@ const VerificarPage = () => {
                         <Volume2 className="h-5 w-5 text-primary" />
                         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Áudio Autêntico</span>
                       </div>
-                      <audio controls className="w-full h-10 filter invert hue-rotate-180 brightness-150">
-                        <source src={audioUrl} type="audio/mpeg" />
-                        Seu navegador não suporta o áudio.
-                      </audio>
+                      <AudioPlayer src={audioUrl} />
                     </div>
                   )}
 

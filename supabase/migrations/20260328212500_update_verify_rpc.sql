@@ -1,4 +1,7 @@
 -- Update verify_certificate to include audio_url
+-- Drop existing function first because we are changing the return type
+DROP FUNCTION IF EXISTS public.verify_certificate(TEXT);
+
 CREATE OR REPLACE FUNCTION public.verify_certificate(cert_number TEXT)
 RETURNS TABLE (
   numero_certificado TEXT,
@@ -32,6 +35,7 @@ $$;
 UPDATE storage.buckets SET public = true WHERE id = 'audio-files';
 
 -- Allow public to read audio files
+DROP POLICY IF EXISTS "Anyone can read audio files" ON storage.objects;
 CREATE POLICY "Anyone can read audio files"
   ON storage.objects FOR SELECT
   USING (bucket_id = 'audio-files');

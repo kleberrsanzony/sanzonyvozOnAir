@@ -144,12 +144,31 @@ const AdminPage = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    console.log("Chamando geração de certificado para:", briefId);
     const response = await supabase.functions.invoke("generate-certificate", {
       body: { briefId },
     });
 
+    console.log("Resposta da Função:", response);
+
     if (response.error) {
-      toast({ title: "Erro", description: "Falha ao gerar certificado", variant: "destructive" });
+      console.error("Erro detalhado da Função:", response.error);
+      const errorMsg = response.error.message || "Erro desconhecido no servidor";
+      toast({ 
+        title: "Erro na Geração", 
+        description: `Servidor diz: ${errorMsg}`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    // Check for business logic errors in data
+    if (response.data?.error) {
+      toast({ 
+        title: "Erro de Regra", 
+        description: response.data.error, 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -428,7 +447,7 @@ const AdminPage = () => {
                           <CheckItem checked={brief.brief_recebido} label="Brief recebido" onClick={() => toggleField(brief.id, "brief_recebido", !brief.brief_recebido)} />
                           <CheckItem checked={brief.pago} label="Pago" onClick={() => toggleField(brief.id, "pago", !brief.pago)} />
                           <CheckItem checked={brief.audio_entregue} label="Áudio entregue" onClick={() => toggleField(brief.id, "audio_entregue", !brief.audio_entregue)} />
-                          <CheckItem checked={brief.certificado_gerado} label="Certificado gerado" onClick={() => {}} />
+                          <CheckItem checked={brief.certificado_gerado} label="Certificado gerado" onClick={() => toggleField(brief.id, "certificado_gerado", !brief.certificado_gerado)} />
                           <CheckItem checked={brief.enviado_cliente} label="Enviado ao cliente" onClick={() => toggleField(brief.id, "enviado_cliente", !brief.enviado_cliente)} />
                         </div>
 
@@ -476,15 +495,15 @@ const AdminPage = () => {
                           </label>
 
                           {/* Generate certificate */}
-                          {!brief.certificado_gerado && (
-                            <button
-                              onClick={() => generateCertificate(brief.id)}
-                              className="flex items-center gap-2 bg-gradient-gold text-primary-foreground px-4 py-2 rounded-md hover:opacity-90 transition-opacity text-sm font-semibold"
-                            >
-                              <Award className="h-4 w-4" />
-                              Gerar Certificado
-                            </button>
-                          )}
+                          <button
+                            onClick={() => generateCertificate(brief.id)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-md hover:opacity-90 transition-opacity text-sm font-semibold ${
+                              brief.certificado_gerado ? "bg-secondary text-foreground border border-border" : "bg-gradient-gold text-primary-foreground"
+                            }`}
+                          >
+                            <Award className="h-4 w-4" />
+                            {brief.certificado_gerado ? "Regerar Certificado (Update)" : "Gerar Certificado"}
+                          </button>
 
                           {/* WhatsApp - sends text + PDF + audio */}
                           {brief.certificado_gerado && (
