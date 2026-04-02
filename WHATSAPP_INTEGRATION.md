@@ -1,76 +1,59 @@
-# Integração WhatsApp — Sanzony.Voz™ (Evolution API v2)
+# 🎙️ Sanzony.Voz — Integração WhatsApp (Evolution API v2)
 
-Este documento descreve a configuração da **Evolution API v2** instalada localmente no ambiente macOS Monterey, integrada ao **Supabase**.
-
-## 🏗️ Arquitetura
-
-- **Frontend (Main App):** Roda na porta `:8081` (Local) ou Vercel.
-- **WhatsApp API:** Evolution API v2 rodando localmente na porta `:8080`.
-- **Banco de Dados:** PostgreSQL remoto hospedado no **Supabase** (`etlimwchxuwoebgrsimh`).
-- **Cache:** Redis local rodando em `localhost:6379`.
+Este guia documenta a integração completa de automação para entrega de briefs, certificados e áudios via WhatsApp.
 
 ---
 
-## 🚀 Como Iniciar o Servidor API
+## 🛠️ Arquitetura do Sistema
 
-Caso o computador seja reiniciado, você deve reativar o servidor da API seguindo estes passos:
+### 🔵 Projetos Supabase (Dual-Setup)
+1. **Mídias (`eazwewzslriqzzvjwpjh`):** Onde os arquivos (Áudios, PDFs) são hospedados. Este projeto DEVE ter os buckets `audio-files` e `certificates` configurados como **Públicos**.
+2. **Evolution DB (`etlimwchxuwoebgrsimh`):** Onde o banco de dados da API Evolution está hospedado para persistência de mensagens e instâncias.
 
-1.  Certifique-se de que o **Redis** está rodando:
-    ```bash
-    brew services start redis
-    ```
-2.  Inicie a Evolution API usando o script otimizado:
-    ```bash
-    ./whatsapp-api/start_api.sh
-    ```
-    *Isso iniciará o servidor em background e salvará os logs em `whatsapp-api/server.log`.*
+### 🟢 API Evolution (Localhost:8080)
+- **Instância:** `SanzonyVoz`
+- **Master Key:** `sanzony_voz_master_key_2026`
+- **Token:** `sanzony_voz_token_2026`
 
 ---
 
-## 🔑 Credenciais e Endpoints
+## 🚀 Fluxo de Automação (Pós-Upload)
 
-### API Endpoint: 
-`http://localhost:8080`
+O fluxo é disparado automaticamente assim que o administrador faz o upload do áudio final na página de Admin.
 
-### Chaves de Autenticação (Master):
-- **API Key:** `sanzony_voz_master_key_2026`
-- **Global Token:** `sanzony_voz_token_2026`
-
-### Instância Configurada:
-- **Nome:** `SanzonyVoz`
-- **Integração:** `WHATSAPP-BAILEYS`
+1. **Geração de Certificado:** O sistema gera um PDF de autenticidade no Supabase.
+2. **Envio de Texto (WhatsApp):** Envia os detalhes do brief para o cliente.
+3. **Envio de PDF (WhatsApp):** Envia o Certificado de Autenticidade como documento.
+4. **Envio de Áudio MP3 (WhatsApp):** Envia a locução final como arquivo `.mp3` real.
 
 ---
 
-## 📲 Gerenciamento de Instâncias
+## 📦 Detalhes Técnicos dos Serviços
 
-### Verificar Status da Conexão:
-```bash
-curl -X GET http://localhost:8080/instance/fetchInstances \
-  -H "apikey: sanzony_voz_master_key_2026"
+### URL Dinâmica (Supabase)
+O sistema detecta automaticamente o projeto de mídias através da variável `VITE_SUPABASE_URL`.
+```typescript
+// Exemplo de construção de URL segura
+const rawUrl = `${VITE_SUPABASE_URL}/storage/v1/object/public/audio-files/${file_path}`;
+const encodedUrl = encodeURI(rawUrl);
 ```
 
-### Gerar Novo QR Code (se desconectado):
-Basta abrir o arquivo `parear.html` na raiz do projeto ou usar:
-```bash
-curl -X GET http://localhost:8080/instance/connect/SanzonyVoz \
-  -H "apikey: sanzony_voz_master_key_2026"
-```
+### Formato de Entrega MP3
+Para garantir compatibilidade máxima e permitir download, o áudio é enviado como `mediatype: 'document'`.
+- **Rota:** `/message/sendMedia/SanzonyVoz`
+- **Mimetype:** `audio/mpeg`
+- **Extensão:** `.mp3`
 
 ---
 
-## 📂 Arquivos Importantes
+## 🛠️ Solução de Problemas (Troubleshooting)
 
-1.  `whatsapp-api/.env`: Configurações de conexão com o banco de dados Supabase e Redis.
-2.  `whatsapp-api/start_api.sh`: Script de inicialização rápida.
-3.  `parear.html`: Visualizador gráfico do QR Code no navegador.
-4.  `.env` (Raiz): Contém as variáveis que o frontend usa para falar com esta API.
+### Erro 400 (Bad Request)
+- Geralmente causado por URL mal formada ou bucket privado. 
+- Verifique se o bucket `audio-files` no projeto `eazwe...` é público.
 
----
-
-## ⚠️ Observações de Segurança
-- A senha do banco de dados e as chaves de API estão salvas nos arquivos `.env`. **Nunca remova esses arquivos do `.gitignore`** para evitar exposição pública.
-- A Evolution API local não é acessível pela internet externa (Vercel) a menos que você use um túnel (ex: Ngrok). Para uso admin local, a configuração atual é ideal.
+### Erro 500 (Internal Server Error)
+- A API tentou processar mas falhou. Verifique o arquivo `api.log` para ver logs detalhados de rede ou FFmpeg.
 
 ---
-📅 *Documentação gerada em 01/04/2026 por Antigravity AI.*
+**Documentação atualizada em: 02 de Abril de 2026**
