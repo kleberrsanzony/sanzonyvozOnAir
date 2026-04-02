@@ -10,13 +10,9 @@
 // Integration: Evolution API v2
 // =============================================================================
 
-const API_URL = import.meta.env.VITE_EVOLUTION_API_URL || 'https://sanzonyvozonair.fly.dev';
-const API_KEY = import.meta.env.VITE_EVOLUTION_API_KEY || 'sanzony_voz_master_key_2026';
-const INSTANCE_RAW = import.meta.env.VITE_EVOLUTION_INSTANCE_NAME;
-
-// Regra de Autocura: Na v1.6.1 a instância ativa é 'sanzony'. 
-// Se a env var estiver vazia ou com o nome antigo 'SanzonyVoz', forçamos a correta.
-const INSTANCE = (!INSTANCE_RAW || INSTANCE_RAW === 'SanzonyVoz') ? 'sanzony' : INSTANCE_RAW;
+const API_URL = import.meta.env.VITE_EVOLUTION_API_URL;
+const API_KEY = import.meta.env.VITE_EVOLUTION_API_KEY;
+const INSTANCE = import.meta.env.VITE_EVOLUTION_INSTANCE_NAME;
 
 export interface DeliveryPayload {
   nome: string;
