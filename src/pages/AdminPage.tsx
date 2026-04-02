@@ -590,7 +590,7 @@ const AdminPage = () => {
                             onActionClick={() => handleStatusAction(brief)}
                             loading={isThisLoading}
                             onAudioUpload={
-                              brief.status === 'em_producao'
+                              brief.status !== 'entregue'
                                 ? (file) => handleAudioUpload(brief, file)
                                 : undefined
                             }

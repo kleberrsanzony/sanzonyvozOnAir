@@ -177,6 +177,26 @@ export const automationService = {
     });
     console.log('✓ WhatsApp Texto enviado.');
 
+    // ── Step 4.2: WhatsApp Certificate (PDF) ──────────────────────────────
+    console.log('› Enviando Certificado PDF para:', waPayload.whatsapp);
+    const docResult = await whatsappService.sendDocument(waPayload);
+
+    if (docResult.success) {
+      steps.push({
+        label: 'WhatsApp: Certificado PDF',
+        status: 'ok',
+        detail: 'PDF enviado com sucesso.',
+      });
+      console.log('✓ WhatsApp PDF enviado.');
+    } else {
+      console.warn('⚠ Falha no envio do PDF:', docResult.error);
+      steps.push({
+        label: 'WhatsApp: Certificado PDF',
+        status: 'skipped',
+        detail: `Falha (não letal): ${docResult.error}`,
+      });
+    }
+
     // ── Step 4.5: WhatsApp PTT (Voice Message) ───────────────────────────
     console.log('› Enviando PTT (Áudio gravado) para:', waPayload.whatsapp);
     const pttResult = await whatsappService.sendPtt(waPayload);
@@ -229,19 +249,10 @@ export const automationService = {
 
   /**
    * Validates all pre-conditions required for automated delivery.
-   * Call this before starting the flow.
+   * "Se uplodou o áudio, está pronto para ser entregue."
    */
   validateForAutoDelivery(brief: Record<string, unknown>): { valid: boolean; reason?: string } {
-    // 1. Payment must be confirmed (status must be em_producao or beyond)
-    const paymentStatuses: BriefStatus[] = ['em_producao', 'em_revisao', 'pronto_envio'];
-    if (!paymentStatuses.includes(brief.status as BriefStatus)) {
-      return {
-        valid: false,
-        reason: 'Pagamento não confirmado. O pedido deve estar em produção para ativar a automação.',
-      };
-    }
-
-    // 2. Valid WhatsApp
+    // 1. Valid WhatsApp
     if (!isValidWhatsApp(brief.whatsapp as string)) {
       return {
         valid: false,
@@ -249,7 +260,7 @@ export const automationService = {
       };
     }
 
-    // 3. Audio present
+    // 2. Audio present
     if (!brief.audio_url) {
       return { valid: false, reason: 'Arquivo de áudio não encontrado no sistema.' };
     }

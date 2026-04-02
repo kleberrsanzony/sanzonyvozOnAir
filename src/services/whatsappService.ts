@@ -92,7 +92,13 @@ export const autoSend = async (payload: DeliveryPayload): Promise<SendResult> =>
     return { success: false, error: 'Configuração de API não encontrada.' };
   }
 
-  const cleanNumber = payload.whatsapp.replace(/\D/g, '');
+  let cleanNumber = payload.whatsapp.replace(/\D/g, '');
+  
+  // Adiciona o prefixo 55 (Brasil) se o número tiver 10 ou 11 dígitos (apenas DDD + número)
+  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
+    cleanNumber = `55${cleanNumber}`;
+  }
+
   const endpoint = `${API_URL}/message/sendText/${INSTANCE}`;
 
   try {
@@ -133,8 +139,22 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
     return { success: false, error: 'Áudio ou número inválido.' };
   }
 
-  const cleanNumber = payload.whatsapp.replace(/\D/g, '');
-  const endpoint = `${API_URL}/message/sendWhatsAppAudio/${INSTANCE}`;
+  let cleanNumber = payload.whatsapp.replace(/\D/g, '');
+  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
+    cleanNumber = `55${cleanNumber}`;
+  }
+
+  const SYB_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://eazwewzslriqzzvjwpjh.supabase.co').replace(/\/$/, '');
+  const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
+  
+  // URL absoluta do Supabase com encoding para segurança
+  const rawAudioUrl = payload.audio_url.startsWith('http') 
+    ? payload.audio_url 
+    : `${SYB_URL}/storage/v1/object/public/audio-files/${payload.audio_url}`;
+  
+  const fullAudioUrl = encodeURI(rawAudioUrl);
+  
+  console.log('[WhatsApp] URL do áudio preparada:', fullAudioUrl);
 
   try {
     const response = await fetch(endpoint, {
@@ -145,17 +165,66 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
       },
       body: JSON.stringify({
         number: cleanNumber,
-        audio: payload.audio_url,
-        delay: 1500,
+        mediatype: 'document', // Entrega como arquivo MP3
+        mimetype: 'audio/mpeg',
+        media: fullAudioUrl,
+        fileName: 'Locucao_SanzonyVoz.mp3', // Ele chegará com este nome
+        delay: 2000
       }),
     });
 
     const result = await response.json();
-    if (!response.ok) throw new Error(result.message || 'Erro ao enviar áudio.');
+    if (!response.ok) {
+      console.error('[WhatsApp] API rejeitou o áudio:', result);
+      throw new Error(result.message || 'Erro ao enviar áudio.');
+    }
 
     return { success: true };
   } catch (error: any) {
     console.error('[WhatsApp] Erro ao enviar PTT:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Sends a PDF document (Certificate) via WhatsApp.
+ */
+export const sendDocument = async (payload: DeliveryPayload): Promise<SendResult> => {
+  if (!payload.certificado_url || !isValidWhatsApp(payload.whatsapp)) {
+    return { success: false, error: 'Certificado ou número inválido.' };
+  }
+
+  let cleanNumber = payload.whatsapp.replace(/\D/g, '');
+  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
+    cleanNumber = `55${cleanNumber}`;
+  }
+
+  const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': API_KEY,
+      },
+      body: JSON.stringify({
+        number: cleanNumber,
+        mediatype: 'document',
+        mimetype: 'application/pdf',
+        caption: `Certificado de Autenticidade — ${payload.nome}`,
+        media: payload.certificado_url,
+        fileName: `Certificado_SanzonyVoz_${payload.numero_certificado || 'SVZ'}.pdf`,
+        delay: 2000,
+      }),
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Erro ao enviar documento.');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('[WhatsApp] Erro ao enviar documento:', error.message);
     return { success: false, error: error.message };
   }
 };
@@ -169,6 +238,7 @@ export const whatsappService = {
   sendViaLink,
   autoSend,
   sendPtt,
+  sendDocument,
 
   /** @deprecated use sendViaLink() */
   async sendMessage(props: { nome: string; whatsapp: string; numero_certificado: string | null; audio_url?: string }) {
