@@ -1,22 +1,20 @@
 # 🟢 Guia de Integração WhatsApp - Sanzony.Voz (Cloud Architecture)
 
-Este documento descreve a arquitetura de entrega automatizada do Sanzony.Voz, agora operando **100% nas nuvens** (Cloud-to-Cloud).
+Este documento descreve a arquitetura de entrega automatizada do Sanzony.Voz, agora operando **100% nas nuvens** (Cloud-to-Cloud) com foco em **Estabilidade Bruta** e **Alta Performance**.
 
 ---
 
 ## 🏛️ Arquitetura de Redes
 
-A plataforma Sanzony.Voz orquestra três pilares em nuvem para garantir entrega 24/7 sem dependência de hardware local:
+A plataforma Sanzony.Voz orquestra três pilares em nuvem para garantir entrega 24/7:
 
-1.  **💻 Frontend (Vercel):** Hospeda o painel administrativo em `sanzonyvoz.com.br`.
-2.  **🧠 Motor de Mensagens (Fly.io):** Hospeda a **Evolution API v2** em `sanzonyvozonair.fly.dev`.
-3.  **🗄️ Backend & Mídias (Supabase):** Armazena o banco de dados de briefings e os arquivos `.mp3` e `.pdf`.
+1.  **💻 Frontend (Vercel):** Hospeda o painel administrativo Sanzony.
+2.  **🧠 Motor de Mensagens (Fly.io):** Hospeda a **Evolution API v1.6.1 Stable** em `sanzonyvozonair.fly.dev`.
+3.  **🗄️ Backend & Mídias (Supabase):** PostgreSQL para persistência de dados e Storage para áudios/PDFs.
 
 ---
 
 ## 🛠️ Configuração de Produção (Environment Variables)
-
-Para que o sistema funcione corretamente, a Vercel deve estar configurada com os seguintes endereços:
 
 | Variável | Valor em Produção | Função |
 | :--- | :--- | :--- |
@@ -31,10 +29,9 @@ Para que o sistema funcione corretamente, a Vercel deve estar configurada com os
 Se você precisar atualizar o servidor da API no futuro:
 
 1.  Acesse a pasta `whatsapp-api` via terminal.
-2.  Garanta que está logado: `fly auth login`.
-3.  Execute o comando: `fly deploy`.
+2.  Execute o comando: `fly deploy --image atendai/evolution-api:v1.6.1`.
 
-**Importante:** O motor utiliza a imagem oficial `atendai/evolution-api:latest` e 512MB de RAM dedicada para processamento de mídias pesadas.
+**Importante:** O motor está configurado com **1024MB de RAM dedicada**. Esta configuração é **vital** para garantir que o Baileys não trave ao processar múltiplos áudios simultâneos para o WhatsApp.
 
 ---
 
@@ -42,11 +39,11 @@ Se você precisar atualizar o servidor da API no futuro:
 
 ### 1. Mensagens não chegam (API Offline)
 - Verifique o status na Fly.io: `fly status -a sanzonyvozonair`.
-- Se as máquinas estiverem paradas, force o início: `fly m start -a sanzonyvozonair`.
+- Reinicie se necessário: `fly apps restart -a sanzonyvozonair`.
 
-### 2. Erro de Banco de Dados (Postgres Connection)
-- Verifique se os **Secrets** do Fly.io estão corretos (apontando para o Supabase `etlimw...`).
-- Comando: `fly secrets list -a sanzonyvozonair`.
+### 2. Painel de Gerenciamento (Manager)
+- Endereço: `https://sanzonyvozonair.fly.dev/manager/instances`
+- Senha: Use a sua `API_KEY` mestra definida nos Secrets.
 
 ---
 🎙️ **Sanzony.Voz Cloud** — *Engenharia de som e dados, sempre on-line.*

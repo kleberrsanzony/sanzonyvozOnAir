@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conectar WhatsApp - Sanzony.Voz</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); max-width: 400px; text-align: center; border: 1px solid #334155; }
+        h1 { color: #f59e0b; margin-bottom: 1rem; }
+        p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+        #qr-container { background: white; padding: 1rem; border-radius: 0.5rem; margin: 2rem 0; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center; }
+        #qr-code { width: 100%; height: auto; }
+        .btn { background: #f59e0b; color: black; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn:hover { background: #d97706; }
+        .loading { color: #f59e0b; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Sanzony.Voz Cloud</h1>
+        <p>Pareie seu WhatsApp com o servidor da Fly.io para automação 24h.</p>
+        
+        <div id="qr-container">
+            <div id="status" class="loading">Iniciando motor...</div>
+            <img id="qr-code" style="display:none;">
+        </div>
+
+        <button class="btn" onclick="fetchQR()">Gerar Novo Código</button>
+        <p style="margin-top: 1rem;">Endereço: <br><small>https://sanzonyvozonair.fly.dev</small></p>
+    </div>
+
+    <script>
+        const API_URL = "https://sanzonyvozonair.fly.dev";
+        const API_KEY = "sanzony_voz_master_key_2026";
+        const INSTANCE = "SanzonyVoz";
+
+        async function fetchQR() {
+            const status = document.getElementById('status');
+            const img = document.getElementById('qr-code');
+            status.innerText = "Criando Sessão...";
+            img.style.display = "none";
+
+            try {
+                // Tenta conectar
+                const response = await fetch(`${API_URL}/instance/connect/${INSTANCE}`, {
+                    headers: { "apikey": API_KEY }
+                });
+                const data = await response.json();
+
+                if (data.base64) {
+                    img.src = data.base64;
+                    img.style.display = "block";
+                    status.style.display = "none";
+                } else if (data.status === "open") {
+                    status.innerText = "✓ JÁ CONECTADO!";
+                    status.style.color = "#22c55e";
+                } else {
+                    status.innerText = "Erro ao carregar QR. Tente mudar o número no comando.";
+                }
+            } catch (e) {
+                status.innerText = "Erro: Servidor Offline ou Bloqueado.";
+            }
+        }
+
+        // Auto-iniciar
+        setTimeout(fetchQR, 500);
+    </script>
+</body>
+</html>
