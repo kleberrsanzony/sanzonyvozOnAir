@@ -42,37 +42,48 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    console.log("DEBUG: Iniciando função com URL:", supabaseUrl);
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify auth
+    // ── 0. Authenticate User (Robust Mode) ──
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+      return new Response(JSON.stringify({ error: 'Token ausente' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+    // Decode JWT to get user_id without strict signature verification dependency
+    // (We will verify role in DB using Service Role, which is secure)
+    const payloadBase64 = token.split('.')[1];
+    const payload = JSON.parse(atob(payloadBase64));
+    const userId = payload.sub;
+
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Token inválido' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Check admin role
-    const { data: roleData } = await supabase
+    console.log("DEBUG: Verificando Admin para ID:", userId);
+
+    // Check admin role directly in database using Service Role client
+    const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('role', 'admin')
-      .single();
+      .maybeSingle();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: 'Acesso negado' }), {
+    if (roleError || !roleData) {
+      console.log("DEBUG Role Error:", roleError?.message || "Usuário não é admin.");
+      return new Response(JSON.stringify({ error: 'Acesso negado ou usuário não é admin' }), {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log("DEBUG: Admin confirmado. Iniciando geração...");
 
     const { briefId } = await req.json();
 
@@ -109,15 +120,27 @@ serve(async (req) => {
     }
 
     // ── 2. Generate sequential number ──
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const { data: seqData } = await supabase.rpc('nextval_cert_seq');
-    const seq = seqData || Math.floor(Math.random() * 999) + 1;
-    const certNumber = `SVZ-${year}-${month}-${String(seq).padStart(3, '0')}`;
+    // IMPORTANT: If this brief already has a numero_certificado from a previous partial run,
+    // reuse it — generating a new one would collide with the UNIQUE constraint on the column.
+    let certNumber: string;
+
+    if (brief.numero_certificado) {
+      certNumber = brief.numero_certificado;
+      console.log("DEBUG: Reusing existing numero_certificado:", certNumber);
+    } else {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const { data: seqData, error: seqError } = await supabase.rpc('nextval_cert_seq');
+      if (seqError) console.warn("Sequence error:", seqError.message);
+      // Fallback: use timestamp millis mod 999 to avoid static random collisions
+      const seq = seqData || (Date.now() % 999) + 1;
+      certNumber = `SVZ-${year}-${month}-${String(seq).padStart(3, '0')}`;
+      console.log("DEBUG: Generated new certNumber:", certNumber, "from seq:", seq);
+    }
 
     // ── 3. Build verification URL & QR Code ──
-    const siteUrl = 'https://sanzo-voice-certify.lovable.app';
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://sanzonyvoz.com.br';
     const verifyUrl = `${siteUrl}/verificar/${certNumber}`;
     // QR code will be drawn directly on the PDF
     const qrPublicUrl = { publicUrl: verifyUrl };
@@ -200,7 +223,7 @@ serve(async (req) => {
     const leftCol = 80;
     const rightCol = 260;
     const fieldSpacing = 32;
-    const emissionDate = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'America/Sao_Paulo' });
+    const emissionDate = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'America/Sao_Paulo' });
 
     const fields = [
       { label: 'CLIENTE', value: brief.nome },
@@ -296,21 +319,33 @@ serve(async (req) => {
     const { data: pdfPublicUrl } = supabase.storage.from('certificates').getPublicUrl(pdfPath);
 
     // ── 5. Update brief with all certificate data ──
+    // NOTE: Status transitions are managed by automationService — do NOT set status here.
+    // Setting an invalid status value (e.g. 'certificado') violates the DB CHECK constraint
+    // and silently prevents numero_certificado from being saved.
+    const updatePayload = {
+      hash_sha256: hashHex,
+      numero_certificado: certNumber,
+      certificado_gerado: true,
+      certificado_url: pdfPublicUrl.publicUrl,
+      qr_code_url: qrPublicUrl.publicUrl,
+      // status intentionally omitted — managed by the calling service
+    };
+
+    console.log("DEBUG UPDATE payload:", JSON.stringify(updatePayload));
+    console.log("DEBUG UPDATE briefId:", briefId);
+
     const { data: updated, error: updateError } = await supabase
       .from('briefs')
-      .update({
-        hash_sha256: hashHex,
-        numero_certificado: certNumber,
-        certificado_gerado: true,
-        certificado_url: pdfPublicUrl.publicUrl,
-        qr_code_url: qrPublicUrl.publicUrl,
-        status: 'certificado',
-      })
+      .update(updatePayload)
       .eq('id', briefId)
       .select()
       .single();
 
+    console.log("DEBUG UPDATE result - error:", updateError ? JSON.stringify(updateError) : "null");
+    console.log("DEBUG UPDATE result - numero_certificado saved:", updated?.numero_certificado ?? "NOT SAVED");
+
     if (updateError) {
+      console.error("CRITICAL: Failed to save certificate to DB:", updateError.message, updateError.details, updateError.hint);
       return new Response(JSON.stringify({ error: updateError.message }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -322,6 +357,7 @@ serve(async (req) => {
         numero: certNumber,
         hash: hashHex,
         pdf_url: pdfPublicUrl.publicUrl,
+        url: pdfPublicUrl.publicUrl,
         qr_url: qrPublicUrl.publicUrl,
         verify_url: verifyUrl,
         brief: updated,

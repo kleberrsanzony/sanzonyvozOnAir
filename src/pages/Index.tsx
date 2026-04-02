@@ -3,6 +3,7 @@ import { Mic, Award, Shield, Headphones, FileText, Phone } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import certifiedSeal from "@/assets/certified-seal.png";
 import { Link } from "react-router-dom";
+import CertificateSeal from "@/components/CertificateSeal";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -236,11 +237,11 @@ const CertificateSection = () => (
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="flex justify-center"
+          className="relative flex justify-center"
         >
-          <div className="relative">
-            <img src={certifiedSeal} alt="Selo Certificado" className="w-64 h-64 object-contain" />
-            <div className="absolute inset-0 glow-gold-lg rounded-full" />
+          <div className="relative group">
+            <CertificateSeal id="SVZ-2026-MODEL" />
+            <div className="absolute inset-0 glow-gold-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           </div>
         </motion.div>
         <motion.div
@@ -343,9 +344,10 @@ const CTASection = () => (
         </p>
         <Link
           to="/briefing"
-          className="inline-block bg-gradient-gold text-primary-foreground px-10 py-4 rounded-md font-semibold text-lg hover:opacity-90 transition-opacity"
+          className="inline-block bg-gradient-gold text-primary-foreground px-10 py-4 rounded-md font-semibold text-lg hover:opacity-90 transition-opacity glow-gold relative overflow-hidden group"
         >
-          Solicitar Orçamento Agora
+          <span className="relative z-10">Solicitar Orçamento Agora</span>
+          <div className="absolute inset-0 animate-shimmer opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         </Link>
       </motion.div>
     </div>

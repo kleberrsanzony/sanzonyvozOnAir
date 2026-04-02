@@ -79,7 +79,15 @@ const LoginPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-muted-foreground mb-2">Senha</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-muted-foreground">Senha</label>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
             <input
               type="password"
               value={password}
