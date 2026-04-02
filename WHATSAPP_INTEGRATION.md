@@ -1,59 +1,52 @@
-# 🎙️ Sanzony.Voz — Integração WhatsApp (Evolution API v2)
+# 🟢 Guia de Integração WhatsApp - Sanzony.Voz (Cloud Architecture)
 
-Este guia documenta a integração completa de automação para entrega de briefs, certificados e áudios via WhatsApp.
-
----
-
-## 🛠️ Arquitetura do Sistema
-
-### 🔵 Projetos Supabase (Dual-Setup)
-1. **Mídias (`eazwewzslriqzzvjwpjh`):** Onde os arquivos (Áudios, PDFs) são hospedados. Este projeto DEVE ter os buckets `audio-files` e `certificates` configurados como **Públicos**.
-2. **Evolution DB (`etlimwchxuwoebgrsimh`):** Onde o banco de dados da API Evolution está hospedado para persistência de mensagens e instâncias.
-
-### 🟢 API Evolution (Localhost:8080)
-- **Instância:** `SanzonyVoz`
-- **Master Key:** `sanzony_voz_master_key_2026`
-- **Token:** `sanzony_voz_token_2026`
+Este documento descreve a arquitetura de entrega automatizada do Sanzony.Voz, agora operando **100% nas nuvens** (Cloud-to-Cloud).
 
 ---
 
-## 🚀 Fluxo de Automação (Pós-Upload)
+## 🏛️ Arquitetura de Redes
 
-O fluxo é disparado automaticamente assim que o administrador faz o upload do áudio final na página de Admin.
+A plataforma Sanzony.Voz orquestra três pilares em nuvem para garantir entrega 24/7 sem dependência de hardware local:
 
-1. **Geração de Certificado:** O sistema gera um PDF de autenticidade no Supabase.
-2. **Envio de Texto (WhatsApp):** Envia os detalhes do brief para o cliente.
-3. **Envio de PDF (WhatsApp):** Envia o Certificado de Autenticidade como documento.
-4. **Envio de Áudio MP3 (WhatsApp):** Envia a locução final como arquivo `.mp3` real.
-
----
-
-## 📦 Detalhes Técnicos dos Serviços
-
-### URL Dinâmica (Supabase)
-O sistema detecta automaticamente o projeto de mídias através da variável `VITE_SUPABASE_URL`.
-```typescript
-// Exemplo de construção de URL segura
-const rawUrl = `${VITE_SUPABASE_URL}/storage/v1/object/public/audio-files/${file_path}`;
-const encodedUrl = encodeURI(rawUrl);
-```
-
-### Formato de Entrega MP3
-Para garantir compatibilidade máxima e permitir download, o áudio é enviado como `mediatype: 'document'`.
-- **Rota:** `/message/sendMedia/SanzonyVoz`
-- **Mimetype:** `audio/mpeg`
-- **Extensão:** `.mp3`
+1.  **💻 Frontend (Vercel):** Hospeda o painel administrativo em `sanzonyvoz.com.br`.
+2.  **🧠 Motor de Mensagens (Fly.io):** Hospeda a **Evolution API v2** em `sanzonyvozonair.fly.dev`.
+3.  **🗄️ Backend & Mídias (Supabase):** Armazena o banco de dados de briefings e os arquivos `.mp3` e `.pdf`.
 
 ---
 
-## 🛠️ Solução de Problemas (Troubleshooting)
+## 🛠️ Configuração de Produção (Environment Variables)
 
-### Erro 400 (Bad Request)
-- Geralmente causado por URL mal formada ou bucket privado. 
-- Verifique se o bucket `audio-files` no projeto `eazwe...` é público.
+Para que o sistema funcione corretamente, a Vercel deve estar configurada com os seguintes endereços:
 
-### Erro 500 (Internal Server Error)
-- A API tentou processar mas falhou. Verifique o arquivo `api.log` para ver logs detalhados de rede ou FFmpeg.
+| Variável | Valor em Produção | Função |
+| :--- | :--- | :--- |
+| `VITE_EVOLUTION_API_URL` | `https://sanzonyvozonair.fly.dev` | Endereço oficial do motor de Zap |
+| `VITE_EVOLUTION_API_KEY` | `sanzony_voz_master_key_2026` | Chave de segurança de mestre |
+| `VITE_EVOLUTION_INSTANCE_NAME` | `SanzonyVoz` | Nome da conexão do WhatsApp |
 
 ---
-**Documentação atualizada em: 02 de Abril de 2026**
+
+## 🚀 Como fazer o Deploy no Fly.io (Manutenção)
+
+Se você precisar atualizar o servidor da API no futuro:
+
+1.  Acesse a pasta `whatsapp-api` via terminal.
+2.  Garanta que está logado: `fly auth login`.
+3.  Execute o comando: `fly deploy`.
+
+**Importante:** O motor utiliza a imagem oficial `atendai/evolution-api:latest` e 512MB de RAM dedicada para processamento de mídias pesadas.
+
+---
+
+## 🧭 Troubleshooting (Cloud)
+
+### 1. Mensagens não chegam (API Offline)
+- Verifique o status na Fly.io: `fly status -a sanzonyvozonair`.
+- Se as máquinas estiverem paradas, force o início: `fly m start -a sanzonyvozonair`.
+
+### 2. Erro de Banco de Dados (Postgres Connection)
+- Verifique se os **Secrets** do Fly.io estão corretos (apontando para o Supabase `etlimw...`).
+- Comando: `fly secrets list -a sanzonyvozonair`.
+
+---
+🎙️ **Sanzony.Voz Cloud** — *Engenharia de som e dados, sempre on-line.*
