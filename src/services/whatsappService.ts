@@ -79,8 +79,34 @@ export const sendViaLink = (payload: DeliveryPayload): SendResult => {
 };
 
 // -----------------------------------------------------------------------------
+// JID Normalization — Crucial for v1.6.1 and Brazilian 9th digit
+// -----------------------------------------------------------------------------
+const normalizeJID = (whatsapp: string): string => {
+  let cleanNumber = whatsapp.replace(/\D/g, '');
+
+  // Adiciona o prefixo 55 (Brasil) se o número possui apenas DDD + Número
+  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
+    cleanNumber = `55${cleanNumber}`;
+  }
+
+  /**
+   * REGRA DE OURO SANZONY: Trata o dígito 9 do Brasil para garantir entrega na v1.6.1
+   * Se o número possui 11 dígitos internos (55 + DDD + 9 + 8 dígitos) totalizando 13 caracteres.
+   * A v1.6.1 exige o formato JID registrado (muitas vezes sem o 9).
+   */
+  if (cleanNumber.startsWith('55') && cleanNumber.length === 13) {
+    // Tenta remover o dígito 9 abusivo (posição 4 do número limpo)
+    const part1 = cleanNumber.substring(0, 4); // 55 + DDD
+    const part2 = cleanNumber.substring(5);    // Os 8 dígitos finais
+    cleanNumber = `${part1}${part2}`;
+  }
+
+  // Garante o sufixo oficial JID para a v1.6.1
+  return cleanNumber.includes('@') ? cleanNumber : `${cleanNumber}@s.whatsapp.net`;
+};
+
+// -----------------------------------------------------------------------------
 // Provider: Auto Send — abstracted for future API integration
-// Swap internals here to use Twilio, Baileys, Z-API, WPPConnect, etc.
 // -----------------------------------------------------------------------------
 export const autoSend = async (payload: DeliveryPayload): Promise<SendResult> => {
   if (!isValidWhatsApp(payload.whatsapp)) {
@@ -92,13 +118,7 @@ export const autoSend = async (payload: DeliveryPayload): Promise<SendResult> =>
     return { success: false, error: 'Configuração de API não encontrada.' };
   }
 
-  let cleanNumber = payload.whatsapp.replace(/\D/g, '');
-  
-  // Adiciona o prefixo 55 (Brasil) se o número tiver 10 ou 11 dígitos (apenas DDD + número)
-  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
-    cleanNumber = `55${cleanNumber}`;
-  }
-
+  const jid = normalizeJID(payload.whatsapp);
   const endpoint = `${API_URL}/message/sendText/${INSTANCE}`;
 
   try {
@@ -109,7 +129,7 @@ export const autoSend = async (payload: DeliveryPayload): Promise<SendResult> =>
         'apikey': API_KEY,
       },
       body: JSON.stringify({
-        number: cleanNumber,
+        number: jid,
         text: buildDeliveryMessage(payload),
         delay: 1200,
         linkPreview: true,
@@ -139,10 +159,7 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
     return { success: false, error: 'Áudio ou número inválido.' };
   }
 
-  let cleanNumber = payload.whatsapp.replace(/\D/g, '');
-  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
-    cleanNumber = `55${cleanNumber}`;
-  }
+  const jid = normalizeJID(payload.whatsapp);
 
   const SYB_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://eazwewzslriqzzvjwpjh.supabase.co').replace(/\/$/, '');
   const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
@@ -164,7 +181,7 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
         'apikey': API_KEY,
       },
       body: JSON.stringify({
-        number: cleanNumber,
+        number: jid,
         mediatype: 'document', // Entrega como arquivo MP3
         mimetype: 'audio/mpeg',
         media: fullAudioUrl,
@@ -194,10 +211,7 @@ export const sendDocument = async (payload: DeliveryPayload): Promise<SendResult
     return { success: false, error: 'Certificado ou número inválido.' };
   }
 
-  let cleanNumber = payload.whatsapp.replace(/\D/g, '');
-  if (cleanNumber.length === 10 || cleanNumber.length === 11) {
-    cleanNumber = `55${cleanNumber}`;
-  }
+  const jid = normalizeJID(payload.whatsapp);
 
   const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
 
@@ -209,7 +223,7 @@ export const sendDocument = async (payload: DeliveryPayload): Promise<SendResult
         'apikey': API_KEY,
       },
       body: JSON.stringify({
-        number: cleanNumber,
+        number: jid,
         mediatype: 'document',
         mimetype: 'application/pdf',
         caption: `Certificado de Autenticidade — ${payload.nome}`,
