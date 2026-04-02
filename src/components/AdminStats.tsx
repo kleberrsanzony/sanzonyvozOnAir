@@ -3,8 +3,7 @@ import { Briefcase, CheckCircle, Clock, TrendingUp } from "lucide-react";
 
 interface Brief {
   id: string;
-  pago: boolean;
-  certificado_gerado: boolean;
+  status: string;
 }
 
 interface AdminStatsProps {
@@ -13,9 +12,9 @@ interface AdminStatsProps {
 
 const AdminStats = ({ briefs }: AdminStatsProps) => {
   const total = briefs.length;
-  const paid = briefs.filter((b) => b.pago).length;
-  const certified = briefs.filter((b) => b.certificado_gerado).length;
-  const conversion = total > 0 ? Math.round((paid / total) * 100) : 0;
+  const inProduction = briefs.filter((b) => b.status === 'em_producao' || b.status === 'fila_producao').length;
+  const readyToSend = briefs.filter((b) => b.status === 'pronto_envio').length;
+  const delivered = briefs.filter((b) => b.status === 'entregue').length;
 
   const stats = [
     {
@@ -26,25 +25,25 @@ const AdminStats = ({ briefs }: AdminStatsProps) => {
       bg: "bg-blue-500/10",
     },
     {
-      label: "Pagos",
-      value: paid,
-      icon: CheckCircle,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
+      label: "Em Produção",
+      value: inProduction,
+      icon: Clock,
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
     },
     {
-      label: "Certificados",
-      value: certified,
+      label: "Prontos p/ Enviar",
+      value: readyToSend,
       icon: TrendingUp,
       color: "text-primary",
       bg: "bg-primary/10",
     },
     {
-      label: "Conversão",
-      value: `${conversion}%`,
-      icon: Clock,
-      color: "text-amber-500",
-      bg: "bg-amber-500/10",
+      label: "Entregues",
+      value: delivered,
+      icon: CheckCircle,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
     },
   ];
 

@@ -28,7 +28,7 @@ AS $$
     b.created_at,
     b.audio_url
   FROM public.briefs b
-  WHERE b.numero_certificado = cert_number
+  WHERE UPPER(TRIM(b.numero_certificado)) = UPPER(TRIM(cert_number))
 $$;
 
 -- Make audio-files bucket public so visitors can hear the certified audio
