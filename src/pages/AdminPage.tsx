@@ -145,6 +145,7 @@ const AdminPage = () => {
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchBriefs = async () => {
+    console.log('[Admin] Buscando briefings...');
     const { data, error } = await supabase
       .from('briefs')
       .select('*')
@@ -155,6 +156,37 @@ const AdminPage = () => {
       setBriefs((data as Brief[]) || []);
     }
   };
+
+  // ── Realtime Subscription ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    // Subscreve para mudanças na tabela 'briefs'
+    const channel = supabase
+      .channel('public:briefs')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'briefs' },
+        (payload) => {
+          console.log('[Realtime] Mudança detectada:', payload);
+          // Recarrega a lista completa para manter a ordem e os dados íntegros
+          fetchBriefs();
+          
+          if (payload.eventType === 'INSERT') {
+            toast({ 
+              title: "🚀 Novo Briefing!", 
+              description: `Um novo pedido de ${(payload.new as Brief).nome} acabou de chegar.`,
+              variant: "default"
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
 
   // ── Status management ──────────────────────────────────────────────────────
 
@@ -364,31 +396,66 @@ const AdminPage = () => {
   // ── Auth ──────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      if (!session?.user) { navigate('/login'); return; }
-      setUser(session.user);
+    let mounted = true;
 
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+    const checkAdmin = async (userId: string) => {
+      try {
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .eq('role', 'admin')
+          .maybeSingle();
 
-      if (!roleData) {
-        toast({ title: 'Acesso negado', description: 'Você não tem permissão de admin.', variant: 'destructive' });
-        navigate('/'); return;
+        if (roleError) throw roleError;
+
+        if (!roleData && mounted) {
+          toast({ title: 'Acesso negado', description: 'Você não tem permissão de admin.', variant: 'destructive' });
+          navigate('/');
+          return;
+        }
+
+        if (mounted) {
+          setIsAdmin(true);
+          await fetchBriefs();
+          setPageLoading(false);
+        }
+      } catch (err: any) {
+        console.error('[Admin Auth] Erro:', err);
+        if (mounted) {
+          toast({ title: 'Erro de Autenticação', description: 'Não foi possível verificar seu acesso.', variant: 'destructive' });
+          setPageLoading(false);
+        }
       }
-      setIsAdmin(true);
-      await fetchBriefs();
-      setPageLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Auth Event]', event);
+      if (!session?.user) {
+        if (mounted) navigate('/login');
+        return;
+      }
+      setUser(session.user);
+      await checkAdmin(session.user.id);
     });
 
+    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) navigate('/login');
+      if (!session?.user) {
+        if (mounted) navigate('/login');
+      } else {
+        setUser(session.user);
+        checkAdmin(session.user.id);
+      }
+    }).catch(err => {
+      console.error('[Session Error]', err);
+      if (mounted) navigate('/login');
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   // ── Filter logic ──────────────────────────────────────────────────────────
