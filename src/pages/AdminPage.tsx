@@ -146,7 +146,7 @@ const AdminPage = () => {
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const fetchBriefs = async () => {
-    console.log('[Admin] Buscando briefings...');
+    // console.log('[Admin] Buscando briefings...');
     const { data, error } = await supabase
       .from('briefs')
       .select('*')
@@ -169,7 +169,7 @@ const AdminPage = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'briefs' },
         (payload) => {
-          console.log('[Realtime] Mudança detectada:', payload);
+          // console.log('[Realtime] Mudança detectada:', payload);
           // Recarrega a lista completa para manter a ordem e os dados íntegros
           fetchBriefs();
           
@@ -205,7 +205,7 @@ const AdminPage = () => {
     if (autoViewRef.current.has(brief.id)) return;
 
     autoViewRef.current.add(brief.id);
-    console.log('[Auto] Pedido visualizado pela primeira vez:', brief.id);
+    // console.log('[Auto] Pedido visualizado pela primeira vez:', brief.id);
     updateStatus(brief.id, 'visualizado').then(() => fetchBriefs()).catch(console.error);
   }, [expandedBrief, briefs]);
 
@@ -319,9 +319,9 @@ const AdminPage = () => {
 
   const deleteBrief = async (briefId: string) => {
     await withBriefLoading(briefId, async () => {
-      console.log('[deleteBrief] apagando id:', briefId);
+      // console.log('[deleteBrief] apagando id:', briefId);
       const { error } = await supabase.from('briefs').delete().eq('id', briefId);
-      console.log('[deleteBrief] resultado:', error ?? 'ok');
+      // console.log('[deleteBrief] resultado:', error ?? 'ok');
       if (error) {
         toast({ title: 'Erro ao apagar', description: error.message, variant: 'destructive' });
       } else {
@@ -373,7 +373,7 @@ const AdminPage = () => {
         .eq('id', briefId);
 
       if (error) {
-        console.error('[saveEditing] Erro Supabase:', error);
+        console.warn('[saveEditing] Erro Supabase:', error);
         toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
       } else {
         console.debug('[saveEditing] Sucesso!');
@@ -397,7 +397,7 @@ const AdminPage = () => {
     let mounted = true;
 
     const initialize = async () => {
-      console.debug('[Admin Auth] Verificando sessão...');
+      // console.debug('[Admin Auth] Verificando sessão...');
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -409,7 +409,7 @@ const AdminPage = () => {
       // 2. Optimistic Check: Se ele já foi verificado recentemente, deixa entrar
       const cachedAdmin = sessionStorage.getItem('is_admin_verified');
       if (cachedAdmin === 'true' && mounted) {
-        console.log('[Admin Auth] Admin em cache, liberando interface...');
+        // console.log('[Admin Auth] Admin em cache, liberando interface...');
         setIsAdmin(true);
         setPageLoading(false);
         fetchBriefs(); // Carrega dados em paralelo
@@ -428,7 +428,7 @@ const AdminPage = () => {
       );
 
       try {
-        console.log('[Admin Auth] Validando permissões no banco...');
+        // console.log('[Admin Auth] Validando permissões no banco...');
         const fetchPromise = supabase
           .from('user_roles')
           .select('role')
@@ -459,15 +459,15 @@ const AdminPage = () => {
           await fetchBriefs();
         }
       } catch (err: any) {
-        console.error('[Admin Auth] Erro fatal durante autenticação:', err);
-        // Se já está cacheado, não interrompe a experiência do usuário
-        if (sessionStorage.getItem('is_admin_verified') !== 'true' && mounted) {
-          toast({ 
-            title: 'Conexão lenta', 
-            description: 'Não foi possível validar seu acesso admin.', 
-            variant: 'destructive' 
-          });
-          navigate('/login');
+        // Se já está cacheado, apenas logamos um aviso discreto em vez de erro vermelho
+        if (sessionStorage.getItem('is_admin_verified') === 'true') {
+          console.warn('[Admin Auth] Verificação em segundo plano demorou, mantendo cache.');
+        } else {
+          console.error('[Admin Auth] Erro de validação:', err);
+          if (mounted) {
+            toast({ title: 'Conexão lenta', description: 'Não foi possível validar seu acesso admin.', variant: 'destructive' });
+            navigate('/login');
+          }
         }
       } finally {
         authCheckingRef.current = false;
@@ -475,7 +475,7 @@ const AdminPage = () => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[Auth Event]', event);
+      // console.log('[Auth Event]', event);
       if (!session?.user) {
         if (mounted) navigate('/login');
         return;

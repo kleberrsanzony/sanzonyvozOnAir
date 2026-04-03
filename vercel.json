@@ -5,7 +5,7 @@
       "destination": "http://18.207.129.86:8080/$1"
     },
     {
-      "source": "/((?!evolution-api|assets|.*\\.).*)",
+      "source": "/((?!evolution-api|assets|pwa-icon.png|manifest.json|sw.js|workbox-.*\\.js).*)",
       "destination": "/index.html"
     }
   ]

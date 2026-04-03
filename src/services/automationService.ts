@@ -71,7 +71,7 @@ export const automationService = {
     console.group(`🚀 [Automation] Fluxo pós-upload — Brief ${briefId}`);
 
     // ── Step 0: Pre-condition validation ───────────────────────────────────
-    console.log('› Validando pré-condições...');
+    // console.log('› Validando pré-condições...');
 
     const preCheck = this.validateForAutoDelivery(briefSnapshot);
     if (!preCheck.valid) {
@@ -92,7 +92,7 @@ export const automationService = {
     try {
       await updateStatus(briefId, 'em_revisao');
       steps.push({ label: 'Status: Em revisão', status: 'ok' });
-      console.log('✓ Status → em_revisao');
+      // console.log('✓ Status → em_revisao');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       steps.push({ label: 'Status: Em revisão', status: 'error', detail: msg });
@@ -104,7 +104,7 @@ export const automationService = {
     // ── Step 2: Generate Certificate ──────────────────────────────────────
     let certData: { certificate?: { numero?: string; url?: string } } | null = null;
     try {
-      console.log('› Gerando certificado...');
+      // console.log('› Gerando certificado...');
       const { data, error: certError } = await supabase.functions.invoke('generate-certificate', {
         body: { briefId },
       });
@@ -118,7 +118,7 @@ export const automationService = {
         status: 'ok',
         detail: `Nº ${certData?.certificate?.numero}`,
       });
-      console.log('✓ Certificado gerado:', certData?.certificate?.numero);
+      // console.log('✓ Certificado gerado:', certData?.certificate?.numero);
     } catch (err: unknown) {
       const msg = `Certificado: ${err instanceof Error ? err.message : String(err)}`;
       steps.push({ label: 'Geração de certificado', status: 'error', detail: msg });
@@ -132,7 +132,7 @@ export const automationService = {
     try {
       await updateStatus(briefId, 'pronto_envio');
       steps.push({ label: 'Status: Pronto para envio', status: 'ok' });
-      console.log('✓ Status → pronto_envio');
+      // console.log('✓ Status → pronto_envio');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       steps.push({ label: 'Status: Pronto para envio', status: 'error', detail: msg });
@@ -158,7 +158,7 @@ export const automationService = {
       audio_url: (freshBrief.audio_url as string) || (briefSnapshot.audio_url as string),
     };
 
-    console.log('› Enviando WhatsApp para:', waPayload.whatsapp);
+    // console.log('› Enviando WhatsApp para:', waPayload.whatsapp);
     const waResult = await whatsappService.autoSend(waPayload);
 
     if (!waResult.success) {
@@ -175,10 +175,10 @@ export const automationService = {
       status: 'ok',
       detail: `Mensagem enviada para ${waPayload.whatsapp}`,
     });
-    console.log('✓ WhatsApp Texto enviado.');
+    // console.log('✓ WhatsApp Texto enviado.');
 
     // ── Step 4.2: WhatsApp Certificate (PDF) ──────────────────────────────
-    console.log('› Enviando Certificado PDF para:', waPayload.whatsapp);
+    // console.log('› Enviando Certificado PDF para:', waPayload.whatsapp);
     const docResult = await whatsappService.sendDocument(waPayload);
 
     if (docResult.success) {
@@ -187,7 +187,7 @@ export const automationService = {
         status: 'ok',
         detail: 'PDF enviado com sucesso.',
       });
-      console.log('✓ WhatsApp PDF enviado.');
+      // console.log('✓ WhatsApp PDF enviado.');
     } else {
       console.warn('⚠ Falha no envio do PDF:', docResult.error);
       steps.push({
@@ -198,7 +198,7 @@ export const automationService = {
     }
 
     // ── Step 4.5: WhatsApp PTT (Voice Message) ───────────────────────────
-    console.log('› Enviando PTT (Áudio gravado) para:', waPayload.whatsapp);
+    // console.log('› Enviando PTT (Áudio gravado) para:', waPayload.whatsapp);
     const pttResult = await whatsappService.sendPtt(waPayload);
 
     if (pttResult.success) {
@@ -206,7 +206,7 @@ export const automationService = {
         label: 'WhatsApp: Áudio enviado (PTT)',
         status: 'ok',
       });
-      console.log('✓ WhatsApp PTT enviado.');
+      // console.log('✓ WhatsApp PTT enviado.');
     } else {
       // PTT failure is not fatal if text message succeeded
       console.warn('⚠ Falha no envio do PTT:', pttResult.error);
@@ -221,7 +221,7 @@ export const automationService = {
     try {
       await updateStatus(briefId, 'entregue');
       steps.push({ label: 'Status: Entregue', status: 'ok' });
-      console.log('✓ Status → entregue');
+      // console.log('✓ Status → entregue');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       steps.push({ label: 'Status: Entregue', status: 'error', detail: msg });
@@ -237,7 +237,7 @@ export const automationService = {
       };
     }
 
-    console.log('🏁 Fluxo completo com sucesso!');
+    // console.log('🏁 Fluxo completo com sucesso!');
     console.groupEnd();
     return {
       success: true,

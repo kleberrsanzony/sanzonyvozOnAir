@@ -30,7 +30,7 @@ const sanzonyLogger = {
     if (severity === 'error') {
       console.error(JSON.stringify(payload, null, 2));
     } else {
-      console.log(JSON.stringify(payload, null, 2));
+    // console.log(JSON.stringify(payload, null, 2));
     }
   }
 };
