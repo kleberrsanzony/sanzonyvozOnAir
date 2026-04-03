@@ -32,10 +32,14 @@ export const AudioPlayer = ({ src }: AudioPlayerProps) => {
 
     const setAudioTime = () => setCurrentTime(audio.currentTime);
     const handleEnded = () => setIsPlaying(false);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
     audio.addEventListener("loadedmetadata", setAudioData);
     audio.addEventListener("timeupdate", setAudioTime);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
 
     // If it's already loaded before listener is attached
     if (audio.readyState >= 1) {
@@ -46,16 +50,22 @@ export const AudioPlayer = ({ src }: AudioPlayerProps) => {
       audio.removeEventListener("loadedmetadata", setAudioData);
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
     };
   }, []);
 
-  const togglePlayPause = () => {
-    const prevValue = isPlaying;
-    setIsPlaying(!prevValue);
-    if (!prevValue) {
-      audioRef.current?.play();
+  const togglePlayPause = async () => {
+    if (!audioRef.current) return;
+    
+    if (audioRef.current.paused) {
+      try {
+        await audioRef.current.play();
+      } catch (err) {
+        console.error("Erro ao reproduzir áudio:", err);
+      }
     } else {
-      audioRef.current?.pause();
+      audioRef.current.pause();
     }
   };
 
