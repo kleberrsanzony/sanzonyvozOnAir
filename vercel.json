@@ -1,8 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/evolution-api/:path*",
-      "destination": "http://18.207.129.86:8080/:path*"
+      "source": "/evolution-api/(.*)",
+      "destination": "http://18.207.129.86:8080/$1"
     }
   ]
 }
