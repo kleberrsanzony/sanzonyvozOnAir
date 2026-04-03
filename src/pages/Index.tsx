@@ -45,7 +45,13 @@ const Navbar = () => (
 const HeroSection = () => (
   <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
     <div className="absolute inset-0">
-      <img src={heroBg} alt="Studio" className="w-full h-full object-cover" />
+      <img 
+        src={heroBg} 
+        alt="Studio" 
+        className="w-full h-full object-cover" 
+        fetchPriority="high"
+        loading="eager"
+      />
       <div className="absolute inset-0 bg-background/75" />
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
     </div>
@@ -57,21 +63,21 @@ const HeroSection = () => (
       </motion.div>
       <motion.h1
         className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight"
-        initial="hidden" animate="visible" variants={fadeInUp} custom={1}
+        initial="hidden" animate="visible" variants={fadeInUp} custom={0.5}
       >
         <span className="text-gradient-gold">SANZONY</span>
         <span className="text-foreground">.VOZ</span>
       </motion.h1>
       <motion.p
         className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mb-10"
-        initial="hidden" animate="visible" variants={fadeInUp} custom={2}
+        initial="hidden" animate="visible" variants={fadeInUp} custom={1}
       >
         Locução profissional com certificação digital de autenticidade. 
         Cada áudio é único, registrado e protegido.
       </motion.p>
       <motion.div
         className="flex flex-col sm:flex-row gap-4 justify-center"
-        initial="hidden" animate="visible" variants={fadeInUp} custom={3}
+        initial="hidden" animate="visible" variants={fadeInUp} custom={1.5}
       >
         <Link
           to="/briefing"
@@ -88,7 +94,7 @@ const HeroSection = () => (
       </motion.div>
       <motion.div
         className="mt-16 flex items-center justify-center gap-3 text-muted-foreground text-sm"
-        initial="hidden" animate="visible" variants={fadeInUp} custom={4}
+        initial="hidden" animate="visible" variants={fadeInUp} custom={2}
       >
         <Shield className="h-4 w-4 text-primary" />
         <span>Áudio Certificado Digitalmente – Sanzony.Voz™</span>
