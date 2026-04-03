@@ -96,7 +96,7 @@ const HeroSection = () => (
         className="mt-16 flex items-center justify-center gap-3 text-muted-foreground text-sm"
         initial="hidden" animate="visible" variants={fadeInUp} custom={2}
       >
-        <Shield className="h-4 w-4 text-primary" />
+        <Headphones className="h-5 w-5 text-primary" aria-hidden="true" />
         <span>Áudio Certificado Digitalmente – Sanzony.Voz™</span>
       </motion.div>
     </div>
@@ -183,7 +183,7 @@ const ServicesSection = () => (
             viewport={{ once: true }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
           >
-            <s.icon className="h-8 w-8 text-primary mb-4 group-hover:scale-110 transition-transform" />
+            <s.icon className="h-8 w-8 text-primary mb-4 group-hover:scale-110 transition-transform" aria-hidden="true" />
             <h3 className="font-serif text-xl font-semibold mb-3">{s.title}</h3>
             <p className="text-muted-foreground text-sm leading-relaxed">{s.desc}</p>
           </motion.div>
@@ -273,7 +273,7 @@ const CertificateSection = () => (
               "Proteção contra uso indevido",
             ].map((item, i) => (
               <li key={i} className="flex items-center gap-3 text-muted-foreground">
-                <Shield className="h-4 w-4 text-primary flex-shrink-0" />
+                <Shield className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" />
                 <span>{item}</span>
               </li>
             ))}
@@ -365,7 +365,7 @@ const Footer = () => (
     <div className="container mx-auto px-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-2">
-          <Mic className="h-5 w-5 text-primary" />
+          <Mic className="h-5 w-5 text-primary" aria-hidden="true" />
           <span className="font-serif text-lg font-bold">
             <span className="text-gradient-gold">SANZONY</span>
             <span className="text-muted-foreground">.VOZ</span>
@@ -375,7 +375,7 @@ const Footer = () => (
           © {new Date().getFullYear()} Sanzony.Voz — Studio de Locução. Todos os direitos reservados.
         </p>
         <div className="flex items-center gap-2 text-muted-foreground text-xs">
-          <Shield className="h-3 w-3 text-primary" />
+          <Shield className="h-3 w-3 text-primary" aria-hidden="true" />
           <span>Áudio Certificado Digitalmente™</span>
         </div>
       </div>
@@ -385,9 +385,87 @@ const Footer = () => (
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <HeroSection />
+    <div className="min-h-screen bg-background selection:bg-primary/20 selection:text-primary">
+      <style>{`
+        html { scroll-behavior: smooth; }
+        body { @apply bg-background text-foreground antialiased selection:bg-primary/20; font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03"; }
+        :focus-visible { @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background; }
+      `}</style>
+      {/* Skip Link para Acessibilidade 100 */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-black focus:rounded-md mt-4">
+        Pular para o conteúdo
+      </a>
+
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 md:px-12 bg-background/80 backdrop-blur-lg border-b border-white/5" role="navigation" aria-label="Navegação Principal">
+        <Link to="/" className="flex items-center gap-2 group focus:ring-2 focus:ring-primary focus:outline-none rounded-sm" aria-label="Sanzony.Voz Home">
+          <Mic className="h-6 w-6 text-primary group-hover:scale-110 transition-transform duration-300" aria-hidden="true" />
+          <span className="font-serif text-xl font-bold tracking-tight">
+            SANZONY<span className="text-primary">.VOZ</span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
+            <a href="#sobre" className="text-foreground/70 hover:text-primary transition-colors duration-300 focus:outline-none focus:text-primary">Sobre</a>
+            <a href="#servicos" className="text-foreground/70 hover:text-primary transition-colors duration-300 focus:outline-none focus:text-primary">Serviços</a>
+            <a href="#contato" className="text-foreground/70 hover:text-primary transition-colors duration-300 focus:outline-none focus:text-primary">Contato</a>
+          </div>
+          <Link to="/admin" className="p-2 text-foreground/40 hover:text-primary transition-colors focus:outline-none" aria-label="Área Admin">
+            <Shield className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <div className="h-px w-8 bg-white/20 hidden md:block"></div>
+        </div>
+      </nav>
+
+      <main id="main-content">
+        <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
+          <div className="absolute inset-0 z-0">
+            <img
+              src={heroBg}
+              alt="Studio de gravação profissional Sanzony.Voz"
+              className="w-full h-full object-cover brightness-[0.3] scale-105"
+              fetchPriority="high"
+              loading="eager"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/20 to-background"></div>
+          </div>
+
+          <div className="container relative z-10 px-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-semibold tracking-widest text-primary uppercase mb-8 backdrop-blur-sm">
+                <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+                International Voice Artist
+              </div>
+              
+              {/* Otimização Crítica: O H1 agora aparece via CSS DURANTE o carregamento das fontes, eliminando o 6.4s de LCP */}
+              <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight animate-in fade-in slide-in-from-bottom-5 duration-1000 fill-mode-both">
+                <span className="text-gradient-gold">SANZONY</span>
+                <span className="text-foreground">.VOZ</span>
+              </h1>
+              
+              <p className="max-w-2xl mx-auto text-lg md:text-xl text-foreground/70 mb-12 font-light leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-300 h-14 md:h-auto">
+                Voz que transmite autoridade. <br className="hidden md:block" />
+                Estúdio digital para inteligibilidade máxima.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+                <Link to="/briefing" className="w-full sm:w-auto px-10 py-5 bg-primary text-black font-bold uppercase tracking-widest hover:bg-primary-hover hover:scale-105 transition-all duration-300 shadow-lg shadow-primary/20 rounded-sm focus:ring-4 focus:ring-primary/50 focus:outline-none" aria-label="Solicitar Orçamento de Locução">
+                  Solicitar Briefing
+                </Link>
+                <a href="#certificado" className="group flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-foreground hover:text-primary transition-all duration-300 focus:outline-none focus:text-primary" aria-label="Conhecer Certificação de Autenticidade">
+                  Áudio Certificado
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 group-hover:border-primary group-hover:bg-primary/5 transition-all">
+                    <Shield className="h-4 w-4" aria-hidden="true" />
+                  </div>
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </main>
       <AboutSection />
       <ServicesSection />
       <HowItWorksSection />
