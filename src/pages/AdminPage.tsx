@@ -400,13 +400,24 @@ const AdminPage = () => {
 
     const checkAdmin = async (userId: string) => {
       console.log('[Admin Auth] Iniciando checkAdmin para:', userId);
+      
+      // Criar um timer de timeout para não travar a página
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('TIMEOUT_DB')), 7000)
+      );
+
       try {
-        const { data: roleData, error: roleError } = await supabase
+        const fetchPromise = supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', userId)
           .eq('role', 'admin')
           .maybeSingle();
+
+        const { data: roleData, error: roleError } = await Promise.race([
+          fetchPromise,
+          timeoutPromise
+        ]) as any;
 
         if (roleError) throw roleError;
 
@@ -425,10 +436,17 @@ const AdminPage = () => {
           setPageLoading(false);
         }
       } catch (err: any) {
-        console.error('[Admin Auth] Erro:', err);
+        console.error('[Admin Auth] Erro fatal durante autenticação:', err);
         if (mounted) {
-          toast({ title: 'Erro de Autenticação', description: 'Não foi possível verificar seu acesso.', variant: 'destructive' });
+          const isTimeout = err.message === 'TIMEOUT_DB';
+          toast({ 
+            title: isTimeout ? 'Conexão lenta' : 'Erro de Autenticação', 
+            description: isTimeout ? 'O banco de dados demorou muito para responder. Tente recarregar.' : 'Não foi possível verificar suas permissões.',
+            variant: 'destructive' 
+          });
           setPageLoading(false);
+          setIsAdmin(false);
+          navigate('/login');
         }
       }
     };
