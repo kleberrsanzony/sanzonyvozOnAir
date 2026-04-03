@@ -32,12 +32,11 @@ Este é o manual operacional final da infraestrutura da Sanzony.Voz, migrada par
 ## 📍 Credenciais e Endpoints
 
 ### 📲 Variáveis de Ambiente (Vercel)
-Estas variáveis **DEVEM** estar no dashboard da Vercel para que o sistema de envio funcione:
-*   `VITE_EVOLUTION_API_URL`: `https://api.sanzonyvoz.com.br`
-*   `VITE_EVOLUTION_API_KEY`: `sanzony_voz_master_key_2026`
-*   `VITE_EVOLUTION_INSTANCE_NAME`: `SanzonyVoz`
-
-### 🔑 Chaves Globais
+Estas variáveis **DEVEM** estar no dashboard da Vercel para que### 1. Motor de Mensagens (API)
+*   **Base URL (Vercel Proxy):** `https://api.sanzonyvoz.com.br`
+    *   *Nota:* Use este endereço na variável `VITE_EVOLUTION_API_URL` da Vercel.
+    *   *Link de Verificação:* `https://sanzonyvoz.com.br/verificar/{numero_certificado}`
+*   **Endereço Físico (AWS):** `http://18.207.129.86:8080` (Acesso direto via HTTP bloqueado por CORS no Chrome).
 *   **Master API Key:** `sanzony_voz_master_key_2026`
 *   **AWS IP Público:** `18.207.129.86`
 
