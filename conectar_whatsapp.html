@@ -3,68 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conectar WhatsApp - Sanzony.Voz</title>
+    <title>Conectar WhatsApp | Sanzony.Voz™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); max-width: 400px; text-align: center; border: 1px solid #334155; }
-        h1 { color: #f59e0b; margin-bottom: 1rem; }
-        p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
-        #qr-container { background: white; padding: 1rem; border-radius: 0.5rem; margin: 2rem 0; width: 250px; height: 250px; display: flex; align-items: center; justify-content: center; }
-        #qr-code { width: 100%; height: auto; }
-        .btn { background: #f59e0b; color: black; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        .btn:hover { background: #d97706; }
-        .loading { color: #f59e0b; font-weight: bold; }
+        :root {
+            --color-primary: #f59e0b;
+            --color-primary-hover: #d97706;
+            --color-bg: #0f172a;
+            --color-card: #1e293b;
+            --color-text: #f8fafc;
+            --color-text-dim: #94a3b8;
+            --color-success: #22c55e;
+            --color-error: #ef4444;
+            --font-main: 'Outfit', system-ui, -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--color-bg);
+            color: var(--color-text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .auth-card {
+            background: var(--color-card);
+            padding: 3rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-card__header { margin-bottom: 2rem; }
+
+        .auth-card__title {
+            color: var(--color-primary);
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .auth-card__subtitle {
+            color: var(--color-text-dim);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .qr-stage {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            margin: 2rem auto;
+            width: 280px;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 2px rgba(0,0,0,0.05);
+        }
+
+        .qr-stage__image {
+            width: 100%;
+            height: auto;
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .qr-stage__status {
+            color: #0f172a;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .qr-stage--loading::after {
+            content: "";
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .button {
+            background: var(--color-primary);
+            color: #000;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+
+        .button:hover {
+            background: var(--color-primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.3);
+        }
+
+        .button:active { transform: translateY(0); }
+
+        .meta-info {
+            font-size: 0.85rem;
+            color: var(--color-text-dim);
+        }
+
+        .meta-info__label { display: block; margin-bottom: 0.25rem; }
+        .meta-info__value { color: var(--color-primary); font-family: monospace; }
+
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            color: var(--color-text-dim);
+            font-size: 0.8rem;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>Sanzony.Voz Cloud</h1>
-        <p>Pareie seu WhatsApp com o servidor da Fly.io para automação 24h.</p>
+    <main class="auth-card">
+        <header class="auth-card__header">
+            <h1 class="auth-card__title">Sanzony.Voz Local</h1>
+            <p class="auth-card__subtitle">Pareie sua conta para automatizar os envios de briefings e áudios locutados.</p>
+        </header>
         
-        <div id="qr-container">
-            <div id="status" class="loading">Iniciando motor...</div>
-            <img id="qr-code" style="display:none;">
+        <div id="qr-container" class="qr-stage">
+            <div id="status" class="qr-stage__status">Iniciando motor local...</div>
+            <img id="qr-code" class="qr-stage__image" alt="QR Code WhatsApp">
         </div>
 
-        <button class="btn" onclick="fetchQR()">Gerar Novo Código</button>
-        <p style="margin-top: 1rem;">Endereço: <br><small>https://sanzonyvozonair.fly.dev</small></p>
-    </div>
+        <button class="button" id="btn-refresh" onclick="fetchQR()">GERAR NOVO QR CODE</button>
+        
+        <div class="meta-info">
+            <span class="meta-info__label">Gateway Local:</span>
+            <span class="meta-info__value" id="api-url">http://localhost:8080</span>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <small class="footer__credits">
+            © <span id="year"></span> Desenvolvido por Sanzony Tech™. Todos os direitos reservados.
+        </small>
+    </footer>
 
     <script>
-        const API_URL = "https://sanzonyvozonair.fly.dev";
+        // Configuração conforme .env local
+        const API_URL = "http://18.207.129.86:8080";
         const API_KEY = "sanzony_voz_master_key_2026";
         const INSTANCE = "SanzonyVoz";
+
+        document.getElementById('year').innerText = new Date().getFullYear();
 
         async function fetchQR() {
             const status = document.getElementById('status');
             const img = document.getElementById('qr-code');
+            const container = document.getElementById('qr-container');
+            
             status.innerText = "Criando Sessão...";
+            status.style.display = "block";
             img.style.display = "none";
+            container.classList.add('qr-stage--loading');
 
             try {
-                // Tenta conectar
+                // Endpoint para conectar/gerar QR na Evolution v2
                 const response = await fetch(`${API_URL}/instance/connect/${INSTANCE}`, {
-                    headers: { "apikey": API_KEY }
+                    headers: { 
+                        "apikey": API_KEY,
+                        "Content-Type": "application/json"
+                    }
                 });
+                
                 const data = await response.json();
+
+                container.classList.remove('qr-stage--loading');
 
                 if (data.base64) {
                     img.src = data.base64;
                     img.style.display = "block";
                     status.style.display = "none";
-                } else if (data.status === "open") {
-                    status.innerText = "✓ JÁ CONECTADO!";
+                } else if (data.status === "open" || data.instance?.status === "open") {
+                    status.innerText = "✓ INSTÂNCIA CONECTADA!";
                     status.style.color = "#22c55e";
+                    status.style.display = "block";
                 } else {
-                    status.innerText = "Erro ao carregar QR. Tente mudar o número no comando.";
+                    status.innerText = "Erro ao carregar QR. Verifique se a instância existe.";
+                    status.style.color = "#ef4444";
                 }
             } catch (e) {
-                status.innerText = "Erro: Servidor Offline ou Bloqueado.";
+                container.classList.remove('qr-stage--loading');
+                status.innerText = "Erro: Motor Offline (localhost:8080)";
+                status.style.color = "#ef4444";
+                console.error(e);
             }
         }
 
-        // Auto-iniciar
-        setTimeout(fetchQR, 500);
+        // Auto-iniciar após breve delay
+        setTimeout(fetchQR, 800);
     </script>
 </body>
 </html>

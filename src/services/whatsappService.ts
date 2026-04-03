@@ -1,18 +1,39 @@
 // =============================================================================
 // WHATSAPP SERVICE — Sanzony.Voz
 //
-// Architecture: Provider-agnostic.
+// Architecture: Provider-agnostic with structured telemetry.
 // - buildDeliveryMessage() builds the text template.
-// - sendViaLink()         opens a wa.me URL (current manual flow).
+// - sendViaLink()         opens a wa.me URL (manual fallback).
 // - autoSend()            calls Evolution API v2 (/message/sendText).
 // - sendPtt()             sends audio as a WhatsApp voice message.
 //
-// Integration: Evolution API v2
+// Integration: Evolution API v2 (Local or Cloud)
 // =============================================================================
 
 const API_URL = import.meta.env.VITE_EVOLUTION_API_URL;
 const API_KEY = import.meta.env.VITE_EVOLUTION_API_KEY;
 const INSTANCE = import.meta.env.VITE_EVOLUTION_INSTANCE_NAME;
+
+/**
+ * Structured Logger following Sanzony Telemetry standards.
+ */
+const sanzonyLogger = {
+  log: (severity: 'info' | 'warn' | 'error', context: string, message: string, data?: any) => {
+    const payload = {
+      timestamp: new Date().toISOString(),
+      severity,
+      context,
+      message,
+      ...(data && { data }),
+      brand: 'Sanzony.Voz™'
+    };
+    if (severity === 'error') {
+      console.error(JSON.stringify(payload, null, 2));
+    } else {
+      console.log(JSON.stringify(payload, null, 2));
+    }
+  }
+};
 
 export interface DeliveryPayload {
   nome: string;
@@ -24,12 +45,13 @@ export interface DeliveryPayload {
 
 export interface SendResult {
   success: boolean;
-  url?: string;    // returned only for link-based flow
+  url?: string;    
   error?: string;
+  humanMessage?: string;
 }
 
 // -----------------------------------------------------------------------------
-// Message Builder — pure function, no side effects
+// Message Builder — pure function
 // -----------------------------------------------------------------------------
 export const buildDeliveryMessage = (payload: DeliveryPayload): string => {
   const { nome, numero_certificado, certificado_url } = payload;
@@ -66,11 +88,15 @@ export const isValidWhatsApp = (whatsapp: string | null | undefined): boolean =>
 };
 
 // -----------------------------------------------------------------------------
-// Provider: Link (manual click) — currently active for web clients
+// Provider: Link (manual click) — fallback
 // -----------------------------------------------------------------------------
 export const sendViaLink = (payload: DeliveryPayload): SendResult => {
   if (!isValidWhatsApp(payload.whatsapp)) {
-    return { success: false, error: 'Número de WhatsApp inválido.' };
+    return { 
+      success: false, 
+      error: 'WhatsApp inválido', 
+      humanMessage: 'O número de WhatsApp informado parece estar incompleto.' 
+    };
   }
   const cleanNumber = payload.whatsapp.replace(/\D/g, '');
   const message = buildDeliveryMessage(payload);
@@ -79,43 +105,38 @@ export const sendViaLink = (payload: DeliveryPayload): SendResult => {
 };
 
 // -----------------------------------------------------------------------------
-// JID Normalization — Crucial for v1.6.1 and Brazilian 9th digit
+// JID Normalization — Crucial for v1.6.1+ and Brazilian 9th digit
 // -----------------------------------------------------------------------------
 const normalizeJID = (whatsapp: string): string => {
   let cleanNumber = whatsapp.replace(/\D/g, '');
 
-  // Adiciona o prefixo 55 (Brasil) se o número possui apenas DDD + Número
   if (cleanNumber.length === 10 || cleanNumber.length === 11) {
     cleanNumber = `55${cleanNumber}`;
   }
 
   /**
-   * REGRA DE OURO SANZONY: Trata o dígito 9 do Brasil para garantir entrega na v1.6.1
-   * Se o número possui 11 dígitos internos (55 + DDD + 9 + 8 dígitos) totalizando 13 caracteres.
-   * A v1.6.1 exige o formato JID registrado (muitas vezes sem o 9).
+   * REGRA DE OURO SANZONY: Trata o dígito 9 do Brasil para JIDs legados da v2
    */
   if (cleanNumber.startsWith('55') && cleanNumber.length === 13) {
-    // Tenta remover o dígito 9 abusivo (posição 4 do número limpo)
     const part1 = cleanNumber.substring(0, 4); // 55 + DDD
     const part2 = cleanNumber.substring(5);    // Os 8 dígitos finais
     cleanNumber = `${part1}${part2}`;
   }
 
-  // Garante o sufixo oficial JID para a v1.6.1
   return cleanNumber.includes('@') ? cleanNumber : `${cleanNumber}@s.whatsapp.net`;
 };
 
 // -----------------------------------------------------------------------------
-// Provider: Auto Send — abstracted for future API integration
+// Provider: Auto Send — Evolution API v2
 // -----------------------------------------------------------------------------
 export const autoSend = async (payload: DeliveryPayload): Promise<SendResult> => {
   if (!isValidWhatsApp(payload.whatsapp)) {
-    return { success: false, error: 'Número de WhatsApp inválido ou ausente.' };
+    return { success: false, error: 'invalid_number', humanMessage: 'Número de WhatsApp ausente ou inválido.' };
   }
 
   if (!API_URL || !API_KEY || !INSTANCE) {
-    console.error('[WhatsApp] Configuração da Evolution API ausente no .env');
-    return { success: false, error: 'Configuração de API não encontrada.' };
+    sanzonyLogger.log('error', 'whatsappService.autoSend', 'Configuração de API ausente', { API_URL, INSTANCE });
+    return { success: false, error: 'config_missing', humanMessage: 'A configuração de envio automático não foi detectada.' };
   }
 
   const jid = normalizeJID(payload.whatsapp);
@@ -142,36 +163,31 @@ export const autoSend = async (payload: DeliveryPayload): Promise<SendResult> =>
       throw new Error(result.message || `Erro ${response.status}: Falha no envio.`);
     }
 
-    console.log('[WhatsApp] Mensagem enviada via Evolution API:', result);
+    sanzonyLogger.log('info', 'whatsappService.autoSend', 'Mensagem enviada com sucesso', { jid });
     return { success: true };
   } catch (error: any) {
-    console.error('[WhatsApp] Erro no envio automático:', error.message);
-    return { success: false, error: error.message };
+    sanzonyLogger.log('error', 'whatsappService.autoSend', 'Falha no envio automático', { error: error.message });
+    return { success: false, error: error.message, humanMessage: 'Não conseguimos enviar a mensagem automática. Tente o envio via link.' };
   }
 };
 
 /**
  * Sends the audio file as a WhatsApp Voice Message (PTT).
- * Premium feature: appears with the blue microphone icon.
  */
 export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => {
   if (!payload.audio_url || !isValidWhatsApp(payload.whatsapp)) {
-    return { success: false, error: 'Áudio ou número inválido.' };
+    return { success: false, error: 'invalid_data', humanMessage: 'Arquivo de áudio ou número inválido.' };
   }
 
   const jid = normalizeJID(payload.whatsapp);
-
   const SYB_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://eazwewzslriqzzvjwpjh.supabase.co').replace(/\/$/, '');
   const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
   
-  // URL absoluta do Supabase com encoding para segurança
   const rawAudioUrl = payload.audio_url.startsWith('http') 
     ? payload.audio_url 
     : `${SYB_URL}/storage/v1/object/public/audio-files/${payload.audio_url}`;
   
   const fullAudioUrl = encodeURI(rawAudioUrl);
-  
-  console.log('[WhatsApp] URL do áudio preparada:', fullAudioUrl);
 
   try {
     const response = await fetch(endpoint, {
@@ -182,24 +198,24 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
       },
       body: JSON.stringify({
         number: jid,
-        mediatype: 'document', // Entrega como arquivo MP3
+        mediatype: 'audio', // 'audio' triggers the PTT effect in most v2 installations
         mimetype: 'audio/mpeg',
         media: fullAudioUrl,
-        fileName: 'Locucao_SanzonyVoz.mp3', // Ele chegará com este nome
+        fileName: 'Locucao_SanzonyVoz.mp3',
         delay: 2000
       }),
     });
 
     const result = await response.json();
     if (!response.ok) {
-      console.error('[WhatsApp] API rejeitou o áudio:', result);
       throw new Error(result.message || 'Erro ao enviar áudio.');
     }
 
+    sanzonyLogger.log('info', 'whatsappService.sendPtt', 'Áudio PTT enviado com sucesso', { jid });
     return { success: true };
   } catch (error: any) {
-    console.error('[WhatsApp] Erro ao enviar PTT:', error.message);
-    return { success: false, error: error.message };
+    sanzonyLogger.log('error', 'whatsappService.sendPtt', 'Falha ao enviar PTT', { error: error.message });
+    return { success: false, error: error.message, humanMessage: 'Ocorreu um problema ao enviar o áudio. O arquivo pode estar indisponível.' };
   }
 };
 
@@ -208,11 +224,10 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
  */
 export const sendDocument = async (payload: DeliveryPayload): Promise<SendResult> => {
   if (!payload.certificado_url || !isValidWhatsApp(payload.whatsapp)) {
-    return { success: false, error: 'Certificado ou número inválido.' };
+    return { success: false, error: 'invalid_doc', humanMessage: 'Certificado não gerado ou número inválido.' };
   }
 
   const jid = normalizeJID(payload.whatsapp);
-
   const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
 
   try {
@@ -236,16 +251,14 @@ export const sendDocument = async (payload: DeliveryPayload): Promise<SendResult
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || 'Erro ao enviar documento.');
 
+    sanzonyLogger.log('info', 'whatsappService.sendDocument', 'Documento enviado com sucesso', { jid });
     return { success: true };
   } catch (error: any) {
-    console.error('[WhatsApp] Erro ao enviar documento:', error.message);
-    return { success: false, error: error.message };
+    sanzonyLogger.log('error', 'whatsappService.sendDocument', 'Falha ao enviar documento', { error: error.message });
+    return { success: false, error: error.message, humanMessage: 'Não foi possível entregar o certificado PDF automaticamente.' };
   }
 };
 
-// -----------------------------------------------------------------------------
-// Facade — maintains backward compatibility with service object pattern
-// -----------------------------------------------------------------------------
 export const whatsappService = {
   buildDeliveryMessage,
   isValidWhatsApp,
@@ -253,9 +266,8 @@ export const whatsappService = {
   autoSend,
   sendPtt,
   sendDocument,
-
-  /** @deprecated use sendViaLink() */
   async sendMessage(props: { nome: string; whatsapp: string; numero_certificado: string | null; audio_url?: string }) {
     return sendViaLink(props);
   },
 };
+
