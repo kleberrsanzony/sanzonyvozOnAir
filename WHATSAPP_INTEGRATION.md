@@ -6,20 +6,33 @@ Este documento descreve a arquitetura de entrega automatizada do Sanzony.Voz, op
 
 ## 🏛️ Arquitetura de Redes
 
-A plataforma Sanzony.Voz orquestra três pilares para garantir entrega robusta:
+## 🛠️ Stack Tecnológica
 
-1.  **💻 Frontend (Vercel):** Hospeda o painel administrativo Sanzony.
-2.  **🧠 Motor de Mensagens (AWS):** Hospeda a **Evolution API v2.x** em sua instância EC2.
-3.  **🗄️ Backend & Mídias (Supabase):** PostgreSQL para persistência de dados e Storage para áudios/PDFs.
+1.  **💻 Frontend (Vercel):** Hospeda o painel administrativo sanzonyvozOnAir (Linkado ao Proxy Cloudflare).
+2.  **🧠 Motor de Mensagens (AWS):** Evolution API v2 rodando em Docker na EC2 (`18.207.129.86`).
+3.  **🛡️ Segurança (Cloudflare Tunnel):** Bridge HTTPS que resolve o erro de *Mixed Content* entre Vercel (HTTPS) e AWS (HTTP).
+4.  **🗄️ Backend & Mídias (Supabase):** PostgreSQL para persistência e Storage para mídias (Áudio/Certificados).
 
 ---
 
-## 🛠️ Configuração de Desenvolvimento/Produção (.env)
+## 🔧 Manutenção Rápida (AWS EC2)
 
-| Variável | Valor Atual | Função |
-| :--- | :--- | :--- |
-| `VITE_EVOLUTION_API_URL` | `http://18.207.129.86:8080` | Endereço do motor AWS |
-| `VITE_EVOLUTION_API_KEY` | `sanzony_voz_master_key_2026` | Chave de segurança global |
+Se precisar reiniciar o motor de mensagens, use estes comandos SSH:
+
+```bash
+# Reiniciar API do WhatsApp
+cd ~/whatsapp-api
+docker-compose restart
+
+# Visualizar Logs do Túnel Cloudflare (Se o site parar de falar com o WhatsApp)
+cat ~/cloudflare.log
+```
+
+### 1. Motor de Mensagens (API)
+*   **Base URL (Vercel Proxy):** `https://api.sanzonyvoz.com.br`
+    *   *Nota:* Use este endereço na variável `VITE_EVOLUTION_API_URL` da Vercel.
+*   **Endereço Físico (AWS):** `http://18.207.129.86:8080` (Acesso direto via HTTP bloqueado por CORS no Chrome).
+*   **Master API Key:** `sanzony_voz_master_key_2026` | Chave de segurança global |
 | `VITE_EVOLUTION_INSTANCE_NAME` | `SanzonyVoz` | Nome da instância do WhatsApp |
 
 ---
