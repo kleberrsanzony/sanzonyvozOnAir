@@ -119,8 +119,9 @@ const FILTER_TABS: { key: FilterKey; label: string }[] = [
 const AdminPage = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
+  const authCheckingRef = useRef(false);
+  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [expandedBrief, setExpandedBrief] = useState<string | null>(null);
   const [editingBrief, setEditingBrief] = useState<string | null>(null);
   // useRef avoids stale closure when multiple fields update the same edit state
@@ -399,6 +400,9 @@ const AdminPage = () => {
     let mounted = true;
 
     const checkAdmin = async (userId: string) => {
+      if (authCheckingRef.current) return;
+      authCheckingRef.current = true;
+
       console.log('[Admin Auth] Iniciando checkAdmin para:', userId);
       
       // Criar um timer de timeout para não travar a página
