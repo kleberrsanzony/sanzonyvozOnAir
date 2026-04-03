@@ -55,8 +55,9 @@ export interface SendResult {
 // -----------------------------------------------------------------------------
 export const buildDeliveryMessage = (payload: DeliveryPayload): string => {
   const { nome, numero_certificado, certificado_url } = payload;
-  const baseOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const verifyUrl = certificado_url || (numero_certificado ? `${baseOrigin}/verificar/${numero_certificado}` : null);
+  const verifyUrl = numero_certificado 
+    ? `https://sanzonyvoz.com.br/verifica/${numero_certificado}` 
+    : null;
 
   const lines: string[] = [
     `Olá, ${nome}! 🎙️`,
@@ -190,6 +191,9 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
   const fullAudioUrl = encodeURI(rawAudioUrl);
 
   try {
+    // Tenta extrair o nome original do arquivo da URL (o que vem após a última barra)
+    const audioFileName = payload.audio_url.split('/').pop() || 'Locucao_SanzonyVoz.mp3';
+
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -201,7 +205,7 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
         mediatype: 'audio', // 'audio' triggers the PTT effect in most v2 installations
         mimetype: 'audio/mpeg',
         media: fullAudioUrl,
-        fileName: 'Locucao_SanzonyVoz.mp3',
+        fileName: audioFileName,
         delay: 2000
       }),
     });
