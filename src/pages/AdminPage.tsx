@@ -399,6 +399,7 @@ const AdminPage = () => {
     let mounted = true;
 
     const checkAdmin = async (userId: string) => {
+      console.log('[Admin Auth] Iniciando checkAdmin para:', userId);
       try {
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
@@ -410,14 +411,17 @@ const AdminPage = () => {
         if (roleError) throw roleError;
 
         if (!roleData && mounted) {
+          console.warn('[Admin Auth] Role admin não encontrada para o usuário.');
           toast({ title: 'Acesso negado', description: 'Você não tem permissão de admin.', variant: 'destructive' });
           navigate('/');
           return;
         }
 
         if (mounted) {
+          console.log('[Admin Auth] Admin verificado, carregando dados...');
           setIsAdmin(true);
           await fetchBriefs();
+          console.log('[Admin Auth] Sucesso ao carregar admin!');
           setPageLoading(false);
         }
       } catch (err: any) {
