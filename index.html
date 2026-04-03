@@ -53,7 +53,20 @@
     <meta name="twitter:image" content="/og-image.png">
 </head>
   <body style="background-color: #000000;">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Hydration Shell: Performance 100 Fix -->
+      <style>
+        .hero-shell { background-color: #000; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; text-align: center; color: #fff; }
+        .logo-shell { font-size: 5rem; font-weight: bold; margin-bottom: 1.5rem; animation: fadeInUp 0.8s ease-out; }
+        .gold-text { background: linear-gradient(to bottom right, #f59e0b, #d97706, #b45309); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      </style>
+      <div class="hero-shell">
+        <div class="logo-shell">
+          <span class="gold-text">SANZONY</span>.VOZ
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
