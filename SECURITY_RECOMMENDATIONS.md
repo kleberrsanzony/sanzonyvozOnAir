@@ -32,7 +32,10 @@ Caso a senha do banco de dados também estivesse no `.env`:
 ## ✅ O que já foi corrigido:
 - [x] Arquivo `.env` removido do rastreio do Git (GitHub).
 - [x] `.gitignore` atualizado para bloquear `.env`, `.env.*` e arquivos `.pem`.
+- [x] Migração final de Projeto Supabase concluída para a REF: **`eazwewzslriqzzvjwpjh`** (Projeto Oficial).
+- [x] Blindagem Visual **"Cinema Dark"** implementada (Modo Escuro forçado em todos os dispositivos).
 - [x] Repositório sincronizado nas branches `main` e `master`.
+- [x] Resiliência de áudio no celular otimizada para interrupções de chamadas.
 
 ---
 *Documento gerado em 03/04/2026 para fins de auditoria e segurança.*
