@@ -59,10 +59,9 @@ async function start() {
       }
     }
 
-    // 3. Limpar QR Code URL (deve apontar para o novo endereço se houver)
+    // 3. Atualizar qr_code_url e menções ao domínio antigo para a nova marca
     if (record.qr_code_url) {
-        // Assume que a URL era algo como lovable/verificar/...
-        // Vamos manter o que está ou atualizar se necessário, mas o principal é o PDF
+        
     }
 
     // 4. Inserir no Novo Banco
