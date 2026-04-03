@@ -347,10 +347,7 @@ const AdminPage = () => {
       periodo: brief.periodo,
     };
     editDataRef.current[brief.id] = initial;
-    setEditDataState((prev) => ({ ...prev, [brief.id]: initial }));
-    setEditingBrief(brief.id);
   };
-
   const saveEditing = async (briefId: string) => {
     console.debug('[saveEditing] Iniciando salvamento id:', briefId);
     const current = editDataRef.current[briefId] || {};
@@ -399,18 +396,39 @@ const AdminPage = () => {
   useEffect(() => {
     let mounted = true;
 
+    const initialize = async () => {
+      console.debug('[Admin Auth] Verificando sessão...');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return;
+      }
+
+      setUser(session.user);
+      
+      // 2. Optimistic Check: Se ele já foi verificado recentemente, deixa entrar
+      const cachedAdmin = sessionStorage.getItem('is_admin_verified');
+      if (cachedAdmin === 'true' && mounted) {
+        console.log('[Admin Auth] Admin em cache, liberando interface...');
+        setIsAdmin(true);
+        setPageLoading(false);
+        fetchBriefs(); // Carrega dados em paralelo
+      }
+
+      // 3. Verificação Formal (com Timeout)
+      checkAdmin(session.user.id);
+    };
+
     const checkAdmin = async (userId: string) => {
       if (authCheckingRef.current) return;
       authCheckingRef.current = true;
 
-      console.log('[Admin Auth] Iniciando checkAdmin para:', userId);
-      
-      // Criar um timer de timeout para não travar a página
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('TIMEOUT_DB')), 7000)
+        setTimeout(() => reject(new Error('TIMEOUT_DB')), 6000)
       );
 
       try {
+        console.log('[Admin Auth] Validando permissões no banco...');
         const fetchPromise = supabase
           .from('user_roles')
           .select('role')
@@ -425,33 +443,34 @@ const AdminPage = () => {
 
         if (roleError) throw roleError;
 
-        if (!roleData && mounted) {
-          console.warn('[Admin Auth] Role admin não encontrada para o usuário.');
-          toast({ title: 'Acesso negado', description: 'Você não tem permissão de admin.', variant: 'destructive' });
-          navigate('/');
+        if (!roleData) {
+          sessionStorage.removeItem('is_admin_verified');
+          if (mounted) {
+            toast({ title: 'Acesso Negado', description: 'Você não tem permissão de admin.', variant: 'destructive' });
+            navigate('/login');
+          }
           return;
         }
 
         if (mounted) {
-          console.log('[Admin Auth] Admin verificado, carregando dados...');
+          sessionStorage.setItem('is_admin_verified', 'true');
           setIsAdmin(true);
-          await fetchBriefs();
-          console.log('[Admin Auth] Sucesso ao carregar admin!');
           setPageLoading(false);
+          await fetchBriefs();
         }
       } catch (err: any) {
         console.error('[Admin Auth] Erro fatal durante autenticação:', err);
-        if (mounted) {
-          const isTimeout = err.message === 'TIMEOUT_DB';
+        // Se já está cacheado, não interrompe a experiência do usuário
+        if (sessionStorage.getItem('is_admin_verified') !== 'true' && mounted) {
           toast({ 
-            title: isTimeout ? 'Conexão lenta' : 'Erro de Autenticação', 
-            description: isTimeout ? 'O banco de dados demorou muito para responder. Tente recarregar.' : 'Não foi possível verificar suas permissões.',
+            title: 'Conexão lenta', 
+            description: 'Não foi possível validar seu acesso admin.', 
             variant: 'destructive' 
           });
-          setPageLoading(false);
-          setIsAdmin(false);
           navigate('/login');
         }
+      } finally {
+        authCheckingRef.current = false;
       }
     };
 
