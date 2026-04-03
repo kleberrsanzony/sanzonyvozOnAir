@@ -45,7 +45,7 @@ export interface DeliveryPayload {
 
 export interface SendResult {
   success: boolean;
-  url?: string;    
+  url?: string;
   error?: string;
   humanMessage?: string;
 }
@@ -55,8 +55,8 @@ export interface SendResult {
 // -----------------------------------------------------------------------------
 export const buildDeliveryMessage = (payload: DeliveryPayload): string => {
   const { nome, numero_certificado, certificado_url } = payload;
-  const verifyUrl = numero_certificado 
-    ? `https://sanzonyvoz.com.br/verifica/${numero_certificado}` 
+  const verifyUrl = numero_certificado
+    ? `https://sanzonyvoz.com.br/verificar/${numero_certificado}`
     : null;
 
   const lines: string[] = [
@@ -93,10 +93,10 @@ export const isValidWhatsApp = (whatsapp: string | null | undefined): boolean =>
 // -----------------------------------------------------------------------------
 export const sendViaLink = (payload: DeliveryPayload): SendResult => {
   if (!isValidWhatsApp(payload.whatsapp)) {
-    return { 
-      success: false, 
-      error: 'WhatsApp inválido', 
-      humanMessage: 'O número de WhatsApp informado parece estar incompleto.' 
+    return {
+      success: false,
+      error: 'WhatsApp inválido',
+      humanMessage: 'O número de WhatsApp informado parece estar incompleto.'
     };
   }
   const cleanNumber = payload.whatsapp.replace(/\D/g, '');
@@ -183,11 +183,11 @@ export const sendPtt = async (payload: DeliveryPayload): Promise<SendResult> => 
   const jid = normalizeJID(payload.whatsapp);
   const SYB_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://eazwewzslriqzzvjwpjh.supabase.co').replace(/\/$/, '');
   const endpoint = `${API_URL}/message/sendMedia/${INSTANCE}`;
-  
-  const rawAudioUrl = payload.audio_url.startsWith('http') 
-    ? payload.audio_url 
+
+  const rawAudioUrl = payload.audio_url.startsWith('http')
+    ? payload.audio_url
     : `${SYB_URL}/storage/v1/object/public/audio-files/${payload.audio_url}`;
-  
+
   const fullAudioUrl = encodeURI(rawAudioUrl);
 
   try {
