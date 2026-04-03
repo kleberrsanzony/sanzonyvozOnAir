@@ -13,6 +13,18 @@ Este documento descreve a arquitetura de entrega automatizada do Sanzony.Voz, op
 3.  **🛡️ Segurança (Cloudflare Tunnel):** Bridge HTTPS que resolve o erro de *Mixed Content* entre Vercel (HTTPS) e AWS (HTTP).
 4.  **🗄️ Backend & Mídias (Supabase):** PostgreSQL para persistência e Storage para mídias (Áudio/Certificados).
 
+### 7. Branding & Social Preview
+A identidade visual do sistema (o que aparece quando você compartilha o link no WhatsApp) é controlada via Meta Tags no `index.html` e uma imagem fixa.
+
+- **Imagem de Preview:** Localizada em `public/og-image.png`.
+- **Tamanho Ideal:** 1024x1024 (Quadrado) ou 1200x630 (Retangular).
+- **Como trocar:** 
+  1. Prepare sua nova imagem (PNG ou JPG).
+  2. Renomeie para `og-image.png`.
+  3. Substitua o arquivo em `public/og-image.png`.
+  4. Faça o Push para o GitHub.
+- **Cache do WhatsApp:** Se a imagem não atualizar na hora após o deploy, use o [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) para "forçar uma raspagem" (Scrape Again) da URL `sanzonyvoz.com.br`.
+
 ---
 # 🟢 Guia Mestre: Integração WhatsApp (Sanzony.Voz) — Cloud AWS
 
