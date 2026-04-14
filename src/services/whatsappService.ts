@@ -30,7 +30,7 @@ const sanzonyLogger = {
     if (severity === 'error') {
       console.error(JSON.stringify(payload, null, 2));
     } else {
-    // console.log(JSON.stringify(payload, null, 2));
+      // console.log(JSON.stringify(payload, null, 2));
     }
   }
 };
@@ -62,7 +62,9 @@ export const buildDeliveryMessage = (payload: DeliveryPayload): string => {
   const lines: string[] = [
     `Olá, ${nome}! 🎙️`,
     ``,
-    `Seu áudio locutado pela *Sanzony.Voz™* está pronto e foi entregue com sucesso!`,
+    `Seu áudio Produzido, _certificado_ e _assinado_  pela *Sanzony.Voz™* seguindo padrão profissional de qualidade, clareza e impacto,`,
+    ``,
+    `*_Foi entregue com sucesso!_*`,
     ``,
   ];
 
@@ -73,8 +75,17 @@ export const buildDeliveryMessage = (payload: DeliveryPayload): string => {
     lines.push(``);
   }
 
-  lines.push(`Foi um prazer trabalhar com você. Qualquer dúvida, é só falar!`);
-  lines.push(`— Equipe Sanzony.Voz™`);
+  lines.push(`Obrigado por confiar no nosso trabalho.`,
+    ``,
+    `Será um prazer dar continuidade aos seus `,
+    `próximos projetos com o mesmo nível de *Qualidade* e *Excelência*.`
+      `_Instagram_: @sanzony.voz`,
+    ``,
+    `_Website_: sanzonyvoz.com.br`,
+    ``,
+    `_Whatsapp_: 81 97121-2995`,
+    ``,);
+  lines.push(`— Equipe Sanzony.Voz™`,);
 
   return lines.join('\n');
 };
